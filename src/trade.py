@@ -4,7 +4,7 @@ import secrets
 
 from discord.ext import commands
 
-from database import DatabaseIdol, DatabaseDeck
+from database import DatabasePersonality, DatabaseDeck
 
 
 class Trade(commands.Cog):
@@ -13,15 +13,15 @@ class Trade(commands.Cog):
         self.bot = bot
 
     #### Commands ####
-    @commands.command(description='Trade one idol for another.')
+    @commands.command(description='Trade one personality for another.')
     async def trade(self, ctx, user, name, group=None):
         if not ctx.message.mentions:
             await ctx.message.add_reaction(u"\u274C")
             await ctx.send('Please specify a user.')
             return None
 
-        id_idol_give = await self.can_give(ctx, ctx.author, name, group)
-        if not id_idol_give:
+        id_perso_give = await self.can_give(ctx, ctx.author, name, group)
+        if not id_perso_give:
             return
 
         user = ctx.message.mentions[0]
@@ -44,8 +44,8 @@ class Trade(commands.Cog):
         name_receive = arg[0]
         group_receive = [] if len(arg) == 1 else arg[1]
 
-        id_idol_receive = await self.can_give(ctx, user, name_receive, group_receive)
-        if not id_idol_receive:
+        id_perso_receive = await self.can_give(ctx, user, name_receive, group_receive)
+        if not id_perso_receive:
             return
 
         def check(message):
@@ -62,22 +62,22 @@ class Trade(commands.Cog):
             await ctx.send('Too late... Give is cancelled.')
         else:
             if msg.content.lower() == 'y' or msg.content.lower() == 'yes':
-                DatabaseDeck.get().give_to(ctx.guild.id, id_idol_give, ctx.author.id, user.id)
-                DatabaseDeck.get().give_to(ctx.guild.id, id_idol_receive, user.id, ctx.author.id)
+                DatabaseDeck.get().give_to(ctx.guild.id, id_perso_give, ctx.author.id, user.id)
+                DatabaseDeck.get().give_to(ctx.guild.id, id_perso_receive, user.id, ctx.author.id)
                 await ctx.message.add_reaction(u"\u2705")
                 await msg.add_reaction(u"\u2705")
             else:
                 await ctx.send('Trade is cancelled.')
 
-    @commands.command(description='Give one idol to someone.')
+    @commands.command(description='Give one personality to someone.')
     async def give(self, ctx, user, name, group=None):
         if not ctx.message.mentions:
             await ctx.message.add_reaction(u"\u274C")
             await ctx.send('Please specify a user.')
             return None
 
-        id_idol = await self.can_give(ctx, ctx.author, name, group)
-        if not id_idol:
+        id_perso = await self.can_give(ctx, ctx.author, name, group)
+        if not id_perso:
             return
 
         user = ctx.message.mentions[0]
@@ -95,16 +95,16 @@ class Trade(commands.Cog):
             await ctx.send('Too late... Give is cancelled.')
         else:
             if msg.content.lower() == 'y' or msg.content.lower() == 'yes':
-                DatabaseDeck.get().give_to(ctx.guild.id, id_idol, ctx.author.id, user.id)
+                DatabaseDeck.get().give_to(ctx.guild.id, id_perso, ctx.author.id, user.id)
                 await ctx.message.add_reaction(u"\u2705")
                 await msg.add_reaction(u"\u2705")
             else:
                 await ctx.send('Give is cancelled.')
 
-    @commands.command(description='Remove an idol from your deck (can\'t be undone!).')
+    @commands.command(description='Remove a personality from your deck (can\'t be undone!).')
     async def discard(self, ctx, name, group=None):
-        id_idol = await self.can_give(ctx, ctx.author, name, group)
-        if not id_idol:
+        id_perso = await self.can_give(ctx, ctx.author, name, group)
+        if not id_perso:
             return
 
         def check(message):
@@ -121,13 +121,13 @@ class Trade(commands.Cog):
             await ctx.send('Discard is cancelled.')
         else:
             if msg.content.lower() == 'y' or msg.content.lower() == 'yes':
-                DatabaseDeck.get().give_to(ctx.guild.id, id_idol, ctx.author.id, None)
+                DatabaseDeck.get().give_to(ctx.guild.id, id_perso, ctx.author.id, None)
                 await ctx.message.add_reaction(u"\u2705")
                 await msg.add_reaction(u"\u2705")
             else:
                 await ctx.send('Discard is cancelled.')
 
-    @commands.command(description='Remove all idols from your deck (can\'t be undone!).')
+    @commands.command(description='Remove all personalities from your deck (can\'t be undone!).')
     async def discard_all(self, ctx):
         letters = string.ascii_letters
         random_string = 'cancel'
@@ -156,31 +156,31 @@ class Trade(commands.Cog):
 
             ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, ctx.author.id)
 
-            for id_idol in ids_deck:
-                DatabaseDeck.get().give_to(ctx.guild.id, id_idol, ctx.author.id, None)
+            for id_perso in ids_deck:
+                DatabaseDeck.get().give_to(ctx.guild.id, id_perso, ctx.author.id, None)
 
             await ctx.message.add_reaction(u"\u2705")
             await msg.add_reaction(u"\u2705")
 
     @staticmethod
     async def can_give(ctx, author, name, group=None):
-        """Return idol id if the user can give, None otherwise."""
-        ## Find idol id
+        """Return perso id if the user can give, None otherwise."""
+        ## Find perso id
         name = name.strip()
 
         if group:
             group = group.strip()
 
-        id_idol = None
+        id_perso = None
 
         if group:
-            id_idol = DatabaseIdol.get().get_idol_group_id(name, group)
+            id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
         else:
-            ids = DatabaseIdol.get().get_idol_ids(name)
+            ids = DatabasePersonality.get().get_perso_ids(name)
             if ids:
-                id_idol = ids[0]
+                id_perso = ids[0]
 
-        if not id_idol:
+        if not id_perso:
             msg = f'I searched everywhere for **{name}**'
             if group:
                 msg += f' in the group *{group}*'
@@ -188,11 +188,11 @@ class Trade(commands.Cog):
             await ctx.send(msg)
             return None
 
-        ## Check if idol belongs to author
-        owner = DatabaseDeck.get().idol_belongs_to(ctx.guild.id, id_idol)
+        # Check if perso belongs to author
+        owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
         if not owner or owner != author.id:
             await ctx.message.add_reaction(u"\u274C")
             await ctx.send(f'You don\'t own **{name}**{" from *" + group + "* " if group else ""}...')
             return None
 
-        return id_idol
+        return id_perso

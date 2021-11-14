@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from database import DatabaseIdol, DatabaseDeck
+from database import DatabasePersonality, DatabaseDeck
 
 
 class Wishlist(commands.Cog):
@@ -11,32 +11,31 @@ class Wishlist(commands.Cog):
 
     #### Commands ####
 
-    @commands.command(description='Add an idol to your wish list.'
+    @commands.command(description='Add a personality to your wish list.'
                                   'Please add "" if it has spaces\n'
-                                  'Take the first corresponding idol.'
-                                  'See list command for all idols.\n'
+                                  'Take the first corresponding personality.'
+                                  'See list command for all personalities.\n'
                                   'Example:\n'
-                                  '   *wish rm'
-                                  '   *wish heejin loona'
-                                  '   *wish joy "red velvet"')
+                                  '   *wish "yoko taro"'
+                                  '   *wish "Yannis Philippakis" SINGER')
     async def wish(self, ctx, name, group=None):
         name = name.strip()
 
         if group:
             group = group.strip()
 
-        id_idol = None
+        id_perso = None
 
         if group:
-            id_idol = DatabaseIdol.get().get_idol_group_id(name, group)
+            id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
         else:
-            ids = DatabaseIdol.get().get_idol_ids(name)
+            ids = DatabasePersonality.get().get_perso_ids(name)
             if ids:
-                id_idol = ids[0]
+                id_perso = ids[0]
 
-        if not id_idol:
+        if not id_perso:
             await ctx.message.add_reaction(u"\u274C")
-            await ctx.send(f'Idol **{name}**{" from *" + group + "* " if group else ""} not found.')
+            await ctx.send(f'Personality **{name}**{" from *" + group + "* " if group else ""} not found.')
             return
 
         nb_wish = DatabaseDeck.get().get_nb_wish(ctx.guild.id, ctx.author.id)
@@ -48,47 +47,46 @@ class Wishlist(commands.Cog):
             await ctx.send('Your wish list is full!')
             return
 
-        if DatabaseDeck.get().add_to_wishlist(ctx.guild.id, id_idol, ctx.author.id):
+        if DatabaseDeck.get().add_to_wishlist(ctx.guild.id, id_perso, ctx.author.id):
             # Green mark
             await ctx.message.add_reaction(u"\u2705")
         else:
             # Red cross
             await ctx.message.add_reaction(u"\u274C")
-            await ctx.send('You already have this idol in your wish list.')
+            await ctx.send('You already have this personality in your wish list.')
 
-    @commands.command(description='Remove an idol from your wish list. Please add "" if it has spaces\n'
-                                  'Take the first corresponding idol. See list command for all idols.\n'
+    @commands.command(description='Remove a personality from your wish list. Please add "" if it has spaces\n'
+                                  'Take the first corresponding personality. See list command for all personalities.\n'
                                   'Example:\n'
-                                  '   *wishremove rm'
-                                  '   *wishremove heejin loona'
-                                  '   *wishremove joy "red velvet"')
+                                  '   *wishremove "yoko taro"'
+                                  '   *wishremove "Yannis Philippakis" SINGER')
     async def wishremove(self, ctx, name, group=None):
         name = name.strip()
 
         if group:
             group = group.strip()
 
-        id_idol = None
+        id_perso = None
 
         if group:
-            id_idol = DatabaseIdol.get().get_idol_group_id(name, group)
+            id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
         else:
-            ids = DatabaseIdol.get().get_idol_ids(name)
+            ids = DatabasePersonality.get().get_perso_ids(name)
             if ids:
-                id_idol = ids[0]
+                id_perso = ids[0]
 
-        if not id_idol:
+        if not id_perso:
             await ctx.message.add_reaction(u"\u274C")
-            await ctx.send(f'Idol **{name}**{" from *" + group + "* " if group else ""} not found.')
+            await ctx.send(f'Personality **{name}**{" from *" + group + "* " if group else ""} not found.')
             return
 
-        if DatabaseDeck.get().remove_from_wishlist(ctx.guild.id, id_idol, ctx.author.id):
+        if DatabaseDeck.get().remove_from_wishlist(ctx.guild.id, id_perso, ctx.author.id):
             # Green mark
             await ctx.message.add_reaction(u"\u2705")
         else:
             # Red cross
             await ctx.message.add_reaction(u"\u274C")
-            await ctx.send('You don\'t have this idol in your wish list.')
+            await ctx.send('You don\'t have this personality in your wish list.')
 
     @commands.command(aliases=['wl'], description='Show your wishlist.')
     async def wishlist(self, ctx):
@@ -100,10 +98,10 @@ class Wishlist(commands.Cog):
         nb_wish = DatabaseDeck.get().get_nb_wish(ctx.guild.id, ctx.author.id)
         max_wish = DatabaseDeck.get().get_max_wish(ctx.guild.id, ctx.author.id)
 
-        for id_idol in ids:
-            current_image = DatabaseDeck.get().get_idol_current_image(ctx.guild.id, id_idol)
-            idol = DatabaseIdol.get().get_idol_information(id_idol, current_image)
-            id_owner = DatabaseDeck.get().idol_belongs_to(ctx.guild.id, id_idol)
+        for id_perso in ids:
+            current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
+            perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
+            id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
             emoji = ''
 
             if id_owner:
@@ -111,7 +109,7 @@ class Wishlist(commands.Cog):
                     emoji = u"\u2705"
                 else:
                     emoji = u"\u274C"
-            description += f'**{idol["name"]}** *{idol["group"]}* {emoji}\n'
+            description += f'**{perso["name"]}** *{perso["group"]}* {emoji}\n'
 
         await ctx.send(embed=discord.Embed(title=f'Wish list of {username} ({nb_wish}/{max_wish})',
                                            description=description))

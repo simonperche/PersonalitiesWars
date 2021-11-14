@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from database import DatabaseIdol, DatabaseDeck
+from database import DatabasePersonality, DatabaseDeck
 
 
 class Images(commands.Cog):
@@ -11,19 +11,19 @@ class Images(commands.Cog):
 
     #### Commands ####
 
-    @commands.command(description='Add a custom image to an idol."')
+    @commands.command(description='Add a custom image to a personality."')
     async def add_image(self, ctx, name, url):
         name = name.strip()
 
-        id_idol = None
+        id_perso = None
 
-        ids = DatabaseIdol.get().get_idol_ids(name)
+        ids = DatabasePersonality.get().get_perso_ids(name)
         if ids:
-            id_idol = ids[0]
+            id_perso = ids[0]
 
-        if not id_idol:
+        if not id_perso:
             await ctx.message.add_reaction(u"\u274C")
-            await ctx.send(f'Idol **{name}** not found.')
+            await ctx.send(f'Personality **{name}** not found.')
             return
 
         if not url:
@@ -31,25 +31,25 @@ class Images(commands.Cog):
             await ctx.send(f'Please give an URL to the image.')
             return
 
-        DatabaseIdol.get().add_image(id_idol, url)
+        DatabasePersonality.get().add_image(id_perso, url)
         # Green mark
         await ctx.message.add_reaction(u"\u2705")
 
-    @commands.command(description='Remove an image of an idol."')
+    @commands.command(description='Remove an image of a personality."')
     async def remove_image(self, ctx, name, url):
         name = name.strip()
 
-        id_idol = None
+        id_perso = None
 
-        ids = DatabaseIdol.get().get_idol_ids(name)
+        ids = DatabasePersonality.get().get_perso_ids(name)
         if ids:
-            id_idol = ids[0]
+            id_perso = ids[0]
 
-        if not id_idol:
+        if not id_perso:
             await ctx.message.add_reaction(u"\u274C")
-            await ctx.send(f'Idol **{name}** not found.')
+            await ctx.send(f'Personality **{name}** not found.')
             return
 
-        DatabaseIdol.get().remove_image(id_idol, url)
+        DatabasePersonality.get().remove_image(id_perso, url)
         # Green mark
         await ctx.message.add_reaction(u"\u2705")

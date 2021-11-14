@@ -77,7 +77,7 @@ class Admin(commands.Cog):
         config = DatabaseDeck.get().get_server_configuration(ctx.guild.id)
 
         description = f'Claim interval: {config["claim_interval"]} minutes\n' \
-                      f'Time to claim an idol: {config["time_to_claim"]} seconds\n' \
+                      f'Time to claim a personality: {config["time_to_claim"]} seconds\n' \
                       f'Number of rolls per hour: {config["rolls_per_hour"]}'
 
         embed = discord.Embed(title=f'Server *{ctx.guild.name}* configuration', description=description)

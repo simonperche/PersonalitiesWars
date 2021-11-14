@@ -5,7 +5,7 @@ import math
 import discord
 from discord.ext import commands
 
-from database import DatabaseDeck, DatabaseIdol
+from database import DatabaseDeck, DatabasePersonality
 from roll import min_until_next_claim
 
 class Profile(commands.Cog):
@@ -26,21 +26,21 @@ class Profile(commands.Cog):
             embed.set_thumbnail(url=user.avatar_url)
             await ctx.send(embed=embed)
 
-        idols_text = []
+        persos_text = []
         description = ''
-        for id_idol in ids_deck:
-            current_image = DatabaseDeck.get().get_idol_current_image(ctx.guild.id, id_idol)
-            idol = DatabaseIdol.get().get_idol_information(id_idol, current_image)
-            idols_text.append(f'**{idol["name"]}** *{idol["group"]}*')
+        for id_perso in ids_deck:
+            current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
+            perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
+            persos_text.append(f'**{perso["name"]}** *{perso["group"]}*')
 
-        idols_text.sort()
+        persos_text.sort()
 
         current_page = 1
         nb_per_page = 20
-        max_page = math.ceil(len(idols_text) / float(nb_per_page))
+        max_page = math.ceil(len(persos_text) / float(nb_per_page))
 
         embed = discord.Embed(title=user.name if user.nick is None else user.nick,
-                              description='\n'.join([idol for idol in idols_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
+                              description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
         embed.set_thumbnail(url=user.avatar_url)
         embed.set_footer(text=f'{current_page} \\ {max_page}')
         msg = await ctx.send(embed=embed)
@@ -78,7 +78,7 @@ class Profile(commands.Cog):
                     # Refresh embed message with the new text
                     if old_page != current_page:
                         embed = discord.Embed(title=user.name if user.nick is None else user.nick,
-                                              description='\n'.join([idol for idol in idols_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
+                                              description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
                         embed.set_thumbnail(url=user.avatar_url)
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)

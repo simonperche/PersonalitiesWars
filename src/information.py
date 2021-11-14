@@ -5,7 +5,7 @@ import math
 import discord
 from discord.ext import commands
 
-from database import DatabaseIdol, DatabaseDeck
+from database import DatabasePersonality, DatabaseDeck
 
 
 class Information(commands.Cog):
@@ -16,15 +16,15 @@ class Information(commands.Cog):
 
     #### Commands ####
 
-    @commands.command(aliases=['info'], description='Show information about an idol. '
-                                                    'Please enter the name of the idol '
+    @commands.command(aliases=['info'], description='Show information about a personality. '
+                                                    'Please enter the name of the personality '
                                                     'with group (optional). Please add ""'
                                                     'if it has spaces\n'
-                                                    'Take the first corresponding idol.'
-                                                    'See list command for all idols.\n'
+                                                    'Take the first corresponding personality.'
+                                                    'See list command for all personalities.\n'
                                                     'Example:\n'
-                                                    '   *info heejin loona'
-                                                    '   *info joy "red velvet"')
+                                                    '   *info jesus'
+                                                    '   *info "Steve Carell" actor')
     async def information(self, ctx, name, group=None):
         # TODO: add more information to the card (all groups...)
         name = name.strip()
@@ -32,16 +32,16 @@ class Information(commands.Cog):
         if group:
             group = group.strip()
 
-        id_idol = None
+        id_perso = None
 
         if group:
-            id_idol = DatabaseIdol.get().get_idol_group_id(name, group)
+            id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
         else:
-            ids = DatabaseIdol.get().get_idol_ids(name)
+            ids = DatabasePersonality.get().get_perso_ids(name)
             if ids:
-                id_idol = ids[0]
+                id_perso = ids[0]
 
-        if not id_idol:
+        if not id_perso:
             msg = f'I searched everywhere for **{name}**'
             if group:
                 msg += f' in the group *{group}*'
@@ -49,16 +49,16 @@ class Information(commands.Cog):
             await ctx.send(msg)
             return
 
-        current_image = DatabaseDeck.get().get_idol_current_image(ctx.guild.id, id_idol)
-        idol = DatabaseIdol.get().get_idol_information(id_idol, current_image)
+        current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
+        perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
 
-        embed = discord.Embed(title=idol['name'], description=idol['group'], colour=secrets.randbelow(0xffffff))
+        embed = discord.Embed(title=perso['name'], description=perso['group'], colour=secrets.randbelow(0xffffff))
 
-        id_owner = DatabaseDeck.get().idol_belongs_to(ctx.guild.id, id_idol)
+        id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
 
         # Counter variables
-        total_images = DatabaseIdol.get().get_idol_images_count(id_idol)
-        current_image = parse_int(DatabaseDeck().get().get_idol_current_image(ctx.guild.id, id_idol)) + 1
+        total_images = DatabasePersonality.get().get_perso_images_count(id_perso)
+        current_image = parse_int(DatabaseDeck().get().get_perso_current_image(ctx.guild.id, id_perso)) + 1
 
         # Footer have always the picture counter, and eventually the owner info
         text = f'{current_image} \\ {total_images} \n'
@@ -70,7 +70,7 @@ class Information(commands.Cog):
         else:
             embed.set_footer(text=text)
 
-        embed.set_image(url=idol['image'])
+        embed.set_image(url=perso['image'])
 
         msg = await ctx.send(embed=embed)
 
@@ -95,20 +95,20 @@ class Information(commands.Cog):
             else:
                 old_image = current_image
                 if reaction.emoji == left_emoji:
-                    DatabaseDeck.get().decrement_idol_current_image(ctx.guild.id, id_idol)
+                    DatabaseDeck.get().decrement_perso_current_image(ctx.guild.id, id_perso)
 
                 if reaction.emoji == right_emoji:
-                    DatabaseDeck.get().increment_idol_current_image(ctx.guild.id, id_idol)
+                    DatabaseDeck.get().increment_perso_current_image(ctx.guild.id, id_perso)
 
-                current_image = parse_int(DatabaseDeck().get().get_idol_current_image(ctx.guild.id, id_idol)) + 1
+                current_image = parse_int(DatabaseDeck().get().get_perso_current_image(ctx.guild.id, id_perso)) + 1
                 await msg.remove_reaction(reaction.emoji, user)
 
                 # Refresh embed message with the new picture if changed
                 if old_image != current_image:
                     # Redo the query because image link changed
-                    image_number = DatabaseDeck.get().get_idol_current_image(ctx.guild.id, id_idol)
-                    idol = DatabaseIdol.get().get_idol_information(id_idol, image_number)
-                    embed.set_image(url=idol['image'])
+                    image_number = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
+                    perso = DatabasePersonality.get().get_perso_information(id_perso, image_number)
+                    embed.set_image(url=perso['image'])
                     text = f'{current_image} \\ {total_images} \n'
                     if id_owner and owner:
                         text = f'{text}Belongs to {owner.name if not owner.nick else owner.nick}'
@@ -118,30 +118,30 @@ class Information(commands.Cog):
 
                     await msg.edit(embed=embed)
 
-    @commands.command(description='List all idols with its name')
+    @commands.command(description='List all personalities with its name')
     async def list(self, ctx, *, name):
-        ids = DatabaseIdol.get().get_idol_ids(name)
+        ids = DatabasePersonality.get().get_perso_ids(name)
 
         if not ids:
-            await ctx.send(f'No *{name}* idol found')
+            await ctx.send(f'No *{name}* personality found')
             return
 
-        idols_text = []
-        for id_idol in ids:
-            image_number = DatabaseDeck.get().get_idol_current_image(ctx.guild.id, id_idol)
-            idol = DatabaseIdol.get().get_idol_information(id_idol, image_number)
-            if not idol:
+        persos_text = []
+        for id_perso in ids:
+            image_number = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
+            perso = DatabasePersonality.get().get_perso_information(id_perso, image_number)
+            if not perso:
                 continue
-            idols_text.append(f'**{idol["name"]}** *{idol["group"]}*')
+            persos_text.append(f'**{perso["name"]}** *{perso["group"]}*')
 
-        idols_text.sort()
+        persos_text.sort()
 
         current_page = 1
         nb_per_page = 20
-        max_page = math.ceil(len(idols_text) / float(nb_per_page))
+        max_page = math.ceil(len(persos_text) / float(nb_per_page))
 
-        embed = discord.Embed(title=f'*{name}* idols',
-                              description='\n'.join([idol for idol in idols_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
+        embed = discord.Embed(title=f'*{name}* personality',
+                              description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
         embed.set_footer(text=f'{current_page} \\ {max_page}')
         msg = await ctx.send(embed=embed)
 
@@ -178,14 +178,14 @@ class Information(commands.Cog):
 
                     # Refresh embed message with the new text
                     if old_page != current_page:
-                        embed = discord.Embed(title=f'*{name}* idols',
-                                              description='\n'.join([idol for idol in idols_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
+                        embed = discord.Embed(title=f'*{name}* personality',
+                                              description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
 
     @commands.command(description='Show all members of a group')
     async def group(self, ctx, *, group_name):
-        group = DatabaseIdol.get().get_group_members(group_name)
+        group = DatabasePersonality.get().get_group_members(group_name)
 
         if not group:
             await ctx.send(f'No *{group_name}* group found.')
@@ -240,7 +240,7 @@ class Information(commands.Cog):
 
     @commands.command(description='Show all groups available')
     async def list_groups(self, ctx):
-        groups = DatabaseIdol.get().get_all_groups()
+        groups = DatabasePersonality.get().get_all_groups()
 
         if not groups:
             await ctx.send(f'No group found. This is probably an error.')

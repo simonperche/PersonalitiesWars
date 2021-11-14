@@ -5,7 +5,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from database import DatabaseIdol, DatabaseDeck
+from database import DatabasePersonality, DatabaseDeck
 
 
 class Roll(commands.Cog):
@@ -22,15 +22,15 @@ class Roll(commands.Cog):
             await ctx.send(f'You cannot roll right now. The next roll reset is in {minutes} minutes.')
             return
 
-        id_idol = DatabaseIdol.get().get_random_idol_id()
-        current_image = DatabaseDeck.get().get_idol_current_image(ctx.guild.id, id_idol)
-        idol = DatabaseIdol.get().get_idol_information(id_idol, current_image)
-        if not idol:
+        id_perso = DatabasePersonality.get().get_random_perso_id()
+        current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
+        perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
+        if not perso:
             ctx.send("An error occurred. If this message is exceptional, "
                      "please try again. Otherwise, contact the administrator.")
 
-        # Mention users if they wish for this idol
-        id_members = DatabaseDeck.get().get_wished_by(ctx.guild.id, id_idol)
+        # Mention users if they wish for this personality
+        id_members = DatabaseDeck.get().get_wished_by(ctx.guild.id, id_perso)
 
         wish_msg = ''
         for id_member in id_members:
@@ -51,10 +51,10 @@ class Roll(commands.Cog):
         if max_rolls - user_nb_rolls - 1 == 2:
             await ctx.send(f'**{ctx.author.name if ctx.author.nick is None else ctx.author.nick}**, 2 uses left.')
 
-        embed = discord.Embed(title=idol['name'], description=idol['group'], colour=secrets.randbelow(0xffffff))
-        embed.set_image(url=idol['image'])
+        embed = discord.Embed(title=perso['name'], description=perso['group'], colour=secrets.randbelow(0xffffff))
+        embed.set_image(url=perso['image'])
 
-        id_owner = DatabaseDeck.get().idol_belongs_to(ctx.guild.id, id_idol)
+        id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
         if id_owner:
             owner = ctx.guild.get_member(id_owner)
 
@@ -65,7 +65,7 @@ class Roll(commands.Cog):
 
         msg = await ctx.send(embed=embed)
 
-        # Cannot claim if idol already claim
+        # Cannot claim if perso already claim
         if id_owner:
             return
 
@@ -90,8 +90,8 @@ class Roll(commands.Cog):
                 is_claimed_or_timeout = time_until_claim == 0
 
                 if is_claimed_or_timeout:
-                    DatabaseDeck.get().add_to_deck(ctx.guild.id, idol['id'], user.id)
-                    await ctx.send(f'{username} claims {idol["name"]}!')
+                    DatabaseDeck.get().add_to_deck(ctx.guild.id, perso['id'], user.id)
+                    await ctx.send(f'{username} claims {perso["name"]}!')
 
                     embed.set_footer(icon_url=user.avatar_url, text=f'Belongs to {username}')
                     await msg.edit(embed=embed)

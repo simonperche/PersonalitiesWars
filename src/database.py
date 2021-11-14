@@ -1,35 +1,35 @@
 """
 Singleton classes representing databases.
 
-These classes provide functions to access to data in idols and member database.
+These classes provide functions to access to data in personalities and member database.
 """
 
 import sqlite3
 
 
-class DatabaseIdol:
+class DatabasePersonality:
     __instance = None
 
     @staticmethod
     def get():
-        if DatabaseIdol.__instance is None:
-            DatabaseIdol()
-        return DatabaseIdol.__instance
+        if DatabasePersonality.__instance is None:
+            DatabasePersonality()
+        return DatabasePersonality.__instance
 
     def __init__(self):
         """Virtually private constructor."""
-        if DatabaseIdol.__instance is None:
-            DatabaseIdol.__instance = self
-            self.db = sqlite3.connect('./database_idol.db')
+        if DatabasePersonality.__instance is None:
+            DatabasePersonality.__instance = self
+            self.db = sqlite3.connect('./database_personality.db')
 
     def connect(self, filename):
         if self.db:
             self.db.close()
         self.db = sqlite3.connect(filename)
 
-    def get_idol_ids(self, name):
+    def get_perso_ids(self, name):
         c = self.db.cursor()
-        c.execute('''SELECT I.id FROM Idol AS I WHERE I.name LIKE ? COLLATE NOCASE''', (f'%{name}%',))
+        c.execute('''SELECT P.id FROM Personality AS P WHERE P.name LIKE ? COLLATE NOCASE''', (f'%{name}%',))
         results = c.fetchall()
         c.close()
 
@@ -37,27 +37,27 @@ class DatabaseIdol:
 
         return ids
 
-    def get_idol_images_count(self, id_idol):
-        """Get images count of an idol."""
+    def get_perso_images_count(self, id_perso):
+        """Get images count of an personality."""
         c = self.db.cursor()
         c.execute('''SELECT COUNT(url) FROM Image
-                    WHERE id_idol = ?''', (id_idol,))
+                    WHERE id_perso = ?''', (id_perso,))
         images_count = c.fetchone()[0]
         c.close()
         return images_count
 
-    def get_idol_group_id(self, name, group):
-        """Return the idol with name and group or None otherwise."""
+    def get_perso_group_id(self, name, group):
+        """Return the personality with name and group or None otherwise."""
         c = self.db.cursor()
-        c.execute('''SELECT I.id FROM Idol AS I
-                     JOIN IdolGroups AS IG ON IG.id_idol = I.id 
-                     JOIN Groups AS G ON IG.id_groups = G.id
+        c.execute('''SELECT P.id FROM Personality AS P
+                     JOIN PersoGroups AS PG ON PG.id_perso = P.id 
+                     JOIN Groups AS G ON PG.id_groups = G.id
                      WHERE G.name LIKE ? COLLATE NOCASE
-                     AND I.name LIKE ? COLLATE NOCASE''', (f'%{group}%', f'%{name}%'))
-        id_idol = c.fetchone()
+                     AND P.name LIKE ? COLLATE NOCASE''', (f'%{group}%', f'%{name}%'))
+        id_perso = c.fetchone()
         c.close()
 
-        return id_idol[0] if id_idol else None
+        return id_perso[0] if id_perso else None
 
     def get_all_groups(self):
         """Return all groups."""
@@ -75,11 +75,11 @@ class DatabaseIdol:
     def get_group_members(self, group_name):
         """Return all group members with dict {name, members=[]}."""
         c = self.db.cursor()
-        c.execute('''SELECT G.name, I.name FROM Idol AS I
-                     JOIN IdolGroups AS IG ON IG.id_idol = I.id 
-                     JOIN Groups AS G ON IG.id_groups = G.id
+        c.execute('''SELECT G.name, P.name FROM Personality AS P
+                     JOIN PersoGroups AS PG ON PG.id_perso = P.id 
+                     JOIN Groups AS G ON PG.id_groups = G.id
                      WHERE G.name LIKE ? COLLATE NOCASE
-                     ORDER BY I.name ASC''', (f'%{group_name}%',))
+                     ORDER BY P.name ASC''', (f'%{group_name}%',))
         results = c.fetchall()
         c.close()
 
@@ -92,46 +92,46 @@ class DatabaseIdol:
 
         return group
 
-    def get_random_idol_id(self):
-        """Return random idol id."""
+    def get_random_perso_id(self):
+        """Return random personality id."""
         c = self.db.cursor()
-        c.execute('''SELECT Idol.id
-                     FROM Idol
+        c.execute('''SELECT Personality.id
+                     FROM Personality
                      ORDER BY RANDOM() LIMIT 1''')
-        random_idol = c.fetchall()
+        random_perso = c.fetchall()
         c.close()
 
         # first [0] for the number of result (here only 1 because LIMIT)
-        # second [0] for the column in result (here only 1 -> Idol.id)
-        return random_idol[0][0]
+        # second [0] for the column in result (here only 1 -> Personality.id)
+        return random_perso[0][0]
 
-    def get_idol_information(self, id_idol, current_image):
-        """Return idol information with dict {name, group, image} format."""
+    def get_perso_information(self, id_perso, current_image):
+        """Return personality information with dict {name, group, image} format."""
         c = self.db.cursor()
-        c.execute('''SELECT I.id, I.name, G.name, Image.url
-                     FROM Idol AS I
-                     JOIN IdolGroups AS IG ON IG.id_idol = I.id
-                     JOIN Groups AS G ON IG.id_groups = G.id
-                     JOIN Image ON Image.id_idol = I.id
-                     WHERE I.id = ?''', (id_idol,))
-        idol = c.fetchall()
+        c.execute('''SELECT P.id, P.name, G.name, Image.url
+                     FROM Personality AS P
+                     JOIN PersoGroups AS PG ON PG.id_perso = P.id
+                     JOIN Groups AS G ON PG.id_groups = G.id
+                     JOIN Image ON Image.id_perso = P.id
+                     WHERE P.id = ?''', (id_perso,))
+        perso = c.fetchall()
         c.close()
 
-        if not idol:
+        if not perso:
             return None
 
-        return {'id': idol[current_image][0], 'name': idol[current_image][1],
-                'group': idol[current_image][2], 'image': idol[current_image][3]}
+        return {'id': perso[current_image][0], 'name': perso[current_image][1],
+                'group': perso[current_image][2], 'image': perso[current_image][3]}
 
-    def add_image(self, id_idol, url):
+    def add_image(self, id_perso, url):
         c = self.db.cursor()
-        c.execute(''' INSERT OR IGNORE INTO Image(url, id_idol) VALUES (?, ?) ''', (url, id_idol,))
+        c.execute(''' INSERT OR IGNORE INTO Image(url, id_perso) VALUES (?, ?) ''', (url, id_perso,))
         self.db.commit()
         c.close()
 
-    def remove_image(self, id_idol, url):
+    def remove_image(self, id_perso, url):
         c = self.db.cursor()
-        c.execute(''' DELETE FROM Image WHERE url = ? AND id_idol = ? ''', (url, id_idol,))
+        c.execute(''' DELETE FROM Image WHERE url = ? AND id_perso = ? ''', (url, id_perso,))
         self.db.commit()
         c.close()
 
@@ -172,14 +172,14 @@ class DatabaseDeck:
             self.db.close()
         self.db = sqlite3.connect(filename)
 
-    def add_to_deck(self, id_server, id_idol, id_member):
+    def add_to_deck(self, id_server, id_perso, id_member):
         self.create_server_if_not_exist(id_server)
         self.create_member_if_not_exist(id_member)
         c = self.db.cursor()
-        c.execute('''UPDATE Deck SET id_member = ? WHERE id_server = ? AND id_idol = ? ''',
-                  (id_member, id_server, id_idol))
-        # c.execute('''INSERT INTO Deck(id_server, id_idol, id_member)
-        #             VALUES(?, ?, ?)''', (id_server, id_idol, id_member))
+        c.execute('''UPDATE Deck SET id_member = ? WHERE id_server = ? AND id_perso = ? ''',
+                  (id_member, id_server, id_perso))
+        # c.execute('''INSERT INTO Deck(id_server, id_perso, id_member)
+        #             VALUES(?, ?, ?)''', (id_server, id_perso, id_member))
         self.db.commit()
         c.close()
 
@@ -230,10 +230,10 @@ class DatabaseDeck:
         self.db.commit()
         c.close()
 
-    def create_active_image_if_not_exist(self, id_server, id_idol):
+    def create_active_image_if_not_exist(self, id_server, id_perso):
         c = self.db.cursor()
-        c.execute('''INSERT OR IGNORE INTO Deck(id_server, id_idol, current_image)
-                     VALUES (?, ?, ?)''', (id_server, id_idol, 0))
+        c.execute('''INSERT OR IGNORE INTO Deck(id_server, id_perso, current_image)
+                     VALUES (?, ?, ?)''', (id_server, id_perso, 0))
         self.db.commit()
         c.close()
 
@@ -281,14 +281,14 @@ class DatabaseDeck:
         c.close()
 
     def get_user_deck(self, id_server, id_member):
-        """Return a list of idol ids."""
+        """Return a list of personality ids."""
         c = self.db.cursor()
-        c.execute('''SELECT id_idol
+        c.execute('''SELECT id_perso
                      FROM Deck
                      WHERE id_server = ? AND id_member = ?''', (id_server, id_member))
         ids = c.fetchall()
         c.close()
-        return [id_idol[0] for id_idol in ids]
+        return [id_perso[0] for id_perso in ids]
 
     def get_last_roll(self, id_server, id_member):
         """Return last roll date or None otherwise."""
@@ -353,10 +353,10 @@ class DatabaseDeck:
 
         return time_to_claim[0]
 
-    def idol_belongs_to(self, id_server, id_idol):
-        """Return the owner of the idol or None otherwise."""
+    def perso_belongs_to(self, id_server, id_perso):
+        """Return the owner of the personality or None otherwise."""
         c = self.db.cursor()
-        c.execute('''SELECT id_member FROM Deck WHERE id_server = ? AND id_idol = ?''', (id_server, id_idol))
+        c.execute('''SELECT id_member FROM Deck WHERE id_server = ? AND id_perso = ?''', (id_server, id_perso))
         owner = c.fetchone()
         c.close()
 
@@ -365,15 +365,15 @@ class DatabaseDeck:
 
         return owner
 
-    def add_to_wishlist(self, id_server, id_idol, id_member):
+    def add_to_wishlist(self, id_server, id_perso, id_member):
         """Return true if success, false otherwise."""
         c = self.db.cursor()
         is_success = True
 
         try:
             c.execute('''INSERT
-                         INTO Wishlist(id_server, id_idol, id_member) 
-                         VALUES (?,?,?)''', (id_server, id_idol, id_member))
+                         INTO Wishlist(id_server, id_perso, id_member) 
+                         VALUES (?,?,?)''', (id_server, id_perso, id_member))
         except sqlite3.IntegrityError:
             is_success = False
         self.db.commit()
@@ -381,23 +381,23 @@ class DatabaseDeck:
 
         return is_success
 
-    def remove_from_wishlist(self, id_server, id_idol, id_member):
+    def remove_from_wishlist(self, id_server, id_perso, id_member):
         """Return true if success, false otherwise."""
         c = self.db.cursor()
 
-        # If the idol is not in wish list
+        # If the personality is not in wish list
         c.execute('''SELECT COUNT(*) FROM Wishlist
                      WHERE id_server = ?
-                     AND id_idol = ?
-                     AND id_member = ?''', (id_server, id_idol, id_member))
+                     AND id_perso = ?
+                     AND id_member = ?''', (id_server, id_perso, id_member))
         if c.fetchone()[0] == 0:
             c.close()
             return False
 
         c.execute('''DELETE FROM Wishlist
                      WHERE id_server = ?
-                     AND id_idol = ?
-                     AND id_member = ?''', (id_server, id_idol, id_member))
+                     AND id_perso = ?
+                     AND id_member = ?''', (id_server, id_perso, id_member))
 
         self.db.commit()
         c.close()
@@ -417,7 +417,7 @@ class DatabaseDeck:
 
     def get_nb_wish(self, id_server, id_member):
         c = self.db.cursor()
-        c.execute('''SELECT COUNT(id_idol)
+        c.execute('''SELECT COUNT(id_perso)
                      FROM Wishlist
                      WHERE id_server = ? AND id_member = ?''', (id_server, id_member))
         nb_wish = c.fetchone()[0]
@@ -426,24 +426,24 @@ class DatabaseDeck:
         return nb_wish
 
     def get_wishlist(self, id_server, id_member):
-        """Return wish list of idols as ids array, or [] otherwise."""
+        """Return wish list of personalities as ids array, or [] otherwise."""
         c = self.db.cursor()
-        c.execute('''SELECT id_idol
+        c.execute('''SELECT id_perso
                      FROM Wishlist
                      WHERE id_server = ? AND id_member = ?''', (id_server, id_member))
         wishlist = c.fetchall()
         c.close()
 
-        wishlist = [id_idol[0] for id_idol in wishlist]
+        wishlist = [is_perso[0] for is_perso in wishlist]
 
         return wishlist
 
-    def get_wished_by(self, id_server, id_idol):
+    def get_wished_by(self, id_server, id_perso):
         """Return wish list of users as ids array, or [] otherwise."""
         c = self.db.cursor()
         c.execute('''SELECT id_member
                      FROM Wishlist
-                     WHERE id_server = ? AND id_idol = ?''', (id_server, id_idol))
+                     WHERE id_server = ? AND id_perso = ?''', (id_server, id_perso))
         members = c.fetchall()
         c.close()
 
@@ -451,60 +451,60 @@ class DatabaseDeck:
 
         return members
 
-    def give_to(self, id_server, id_idol, id_giver, id_receiver):
-        """Give an idol to another player."""
+    def give_to(self, id_server, id_perso, id_giver, id_receiver):
+        """Give an personality to another player."""
         c = self.db.cursor()
         c.execute('''UPDATE Deck
                      SET id_member = ?
                      WHERE id_server = ? AND
-                           id_idol = ? AND
-                           id_member = ?''', (id_receiver, id_server, id_idol, id_giver))
+                           id_perso = ? AND
+                           id_member = ?''', (id_receiver, id_server, id_perso, id_giver))
         self.db.commit()
         c.close()
 
-    def update_idol_current_image(self, id_server, id_idol, current_image):
+    def update_perso_current_image(self, id_server, id_perso, current_image):
         c = self.db.cursor()
         c.execute('''UPDATE Deck
                      SET current_image = ?
-                     WHERE id_server = ? AND id_idol = ?''', (current_image, id_server, id_idol))
+                     WHERE id_server = ? AND id_perso = ?''', (current_image, id_server, id_perso))
         self.db.commit()
         c.close()
 
-    def decrement_idol_current_image(self, id_server, id_idol):
+    def decrement_perso_current_image(self, id_server, id_perso):
         """Try to decrement the current image number."""
-        self.create_active_image_if_not_exist(id_server, id_idol)
-        current_image = self.get_idol_current_image(id_server, id_idol)
+        self.create_active_image_if_not_exist(id_server, id_perso)
+        current_image = self.get_perso_current_image(id_server, id_perso)
         if current_image > 0:
             current_image = current_image - 1
         else:
-            image_count = DatabaseIdol.get().get_idol_images_count(id_idol)
+            image_count = DatabasePersonality.get().get_perso_images_count(id_perso)
             current_image = (image_count-1)
 
-        self.update_idol_current_image(id_server, id_idol, current_image)
+        self.update_perso_current_image(id_server, id_perso, current_image)
         return current_image
 
-    def increment_idol_current_image(self, id_server, id_idol):
+    def increment_perso_current_image(self, id_server, id_perso):
         """Try to increment the current image number."""
-        self.create_active_image_if_not_exist(id_server, id_idol)
-        current_image = self.get_idol_current_image(id_server, id_idol)
-        image_count = DatabaseIdol.get().get_idol_images_count(id_idol)
+        self.create_active_image_if_not_exist(id_server, id_perso)
+        current_image = self.get_perso_current_image(id_server, id_perso)
+        image_count = DatabasePersonality.get().get_perso_images_count(id_perso)
 
         if current_image < (image_count-1):
             current_image = current_image + 1
         else:
             current_image = 0
 
-        self.update_idol_current_image(id_server, id_idol, current_image)
+        self.update_perso_current_image(id_server, id_perso, current_image)
 
         return current_image
 
-    def get_idol_current_image(self, id_server, id_idol):
-        """Get the current image associated to the idol."""
-        self.create_active_image_if_not_exist(id_server, id_idol)
+    def get_perso_current_image(self, id_server, id_perso):
+        """Get the current image associated to the personality."""
+        self.create_active_image_if_not_exist(id_server, id_perso)
         c = self.db.cursor()
         c.execute('''SELECT current_image
                      FROM Deck
-                     WHERE id_server = ? AND id_idol = ?''', (id_server, id_idol))
+                     WHERE id_server = ? AND id_perso = ?''', (id_server, id_perso))
         current_image = c.fetchone()
         c.close()
 
