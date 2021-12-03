@@ -1,1 +1,0 @@
-{"opsys": "Windows", "command": ["nordvpn", "-c", "-g"], "settings": ["france", "spain", "switzerland", "luxembourg", "belgium", "ireland", "germany"], "cwd_path": "C:/Program Files/NordVPN"}
