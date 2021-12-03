@@ -30,10 +30,6 @@ class Roll(commands.Cog):
             current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
             perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
 
-        # if not perso:
-        #     ctx.send("An error occurred. If this message is exceptional, "
-        #              "please try again. Otherwise, contact the administrator.")
-
         # Mention users if they wish for this personality
         id_members = DatabaseDeck.get().get_wished_by(ctx.guild.id, id_perso)
 

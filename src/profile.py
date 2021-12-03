@@ -27,10 +27,8 @@ class Profile(commands.Cog):
             await ctx.send(embed=embed)
 
         persos_text = []
-        description = ''
-        for id_perso in ids_deck:
-            current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
-            perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
+        personalities = DatabasePersonality.get().get_multiple_perso_information(ids_deck)
+        for perso in personalities:
             persos_text.append(f'**{perso["name"]}** *{perso["group"]}*')
 
         persos_text.sort()

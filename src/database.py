@@ -123,6 +123,23 @@ class DatabasePersonality:
         return {'id': perso[current_image][0], 'name': perso[current_image][1],
                 'group': perso[current_image][2], 'image': perso[current_image][3]}
 
+    def get_multiple_perso_information(self, ids_perso):
+        """Return personalities information with dict {name, group} format."""
+        c = self.db.cursor()
+        c.execute(f'''SELECT P.id, P.name, G.name
+                             FROM Personality AS P
+                             JOIN PersoGroups AS PG ON PG.id_perso = P.id
+                             JOIN Groups AS G ON PG.id_groups = G.id
+                             WHERE P.id IN ({', '.join(['?' for _ in ids_perso])})''', ids_perso)
+        personalities = c.fetchall()
+        c.close()
+
+        if not personalities:
+            return None
+
+        return [{'id': perso[0], 'name': perso[1],
+                'group': perso[2]} for perso in personalities]
+
     def add_image(self, id_perso, url):
         c = self.db.cursor()
         c.execute(''' INSERT OR IGNORE INTO Image(url, id_perso) VALUES (?, ?) ''', (url, id_perso,))
