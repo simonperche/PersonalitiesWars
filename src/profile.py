@@ -28,8 +28,9 @@ class Profile(commands.Cog):
 
         persos_text = []
         personalities = DatabasePersonality.get().get_multiple_perso_information(ids_deck)
-        for perso in personalities:
-            persos_text.append(f'**{perso["name"]}** *{perso["group"]}*')
+        if personalities:
+            for perso in personalities:
+                persos_text.append(f'**{perso["name"]}** *{perso["group"]}*')
 
         persos_text.sort()
 
