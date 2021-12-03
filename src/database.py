@@ -27,7 +27,7 @@ class DatabasePersonality:
             self.db.close()
         self.db = sqlite3.connect(filename)
 
-    def get_perso_ids(self, name):
+    def get_perso_ids_containing_name(self, name):
         c = self.db.cursor()
         c.execute('''SELECT P.id FROM Personality AS P WHERE P.name LIKE ? COLLATE NOCASE''', (f'%{name}%',))
         results = c.fetchall()
@@ -36,6 +36,14 @@ class DatabasePersonality:
         ids = [r[0] for r in results]
 
         return ids
+
+    def get_perso_id(self, name):
+        c = self.db.cursor()
+        c.execute('''SELECT P.id FROM Personality AS P WHERE P.name = ? COLLATE NOCASE''', (name,))
+        results = c.fetchone()
+        c.close()
+
+        return results[0] if results else None
 
     def get_perso_images_count(self, id_perso):
         """Get images count of an personality."""
@@ -52,8 +60,8 @@ class DatabasePersonality:
         c.execute('''SELECT P.id FROM Personality AS P
                      JOIN PersoGroups AS PG ON PG.id_perso = P.id 
                      JOIN Groups AS G ON PG.id_groups = G.id
-                     WHERE G.name LIKE ? COLLATE NOCASE
-                     AND P.name LIKE ? COLLATE NOCASE''', (f'%{group}%', f'%{name}%'))
+                     WHERE G.name = ? COLLATE NOCASE
+                     AND P.name = ? COLLATE NOCASE''', (group, name))
         id_perso = c.fetchone()
         c.close()
 

@@ -15,11 +15,7 @@ class Images(commands.Cog):
     async def add_image(self, ctx, name, url):
         name = name.strip()
 
-        id_perso = None
-
-        ids = DatabasePersonality.get().get_perso_ids(name)
-        if ids:
-            id_perso = ids[0]
+        id_perso = DatabasePersonality.get().get_perso_id(name)
 
         if not id_perso:
             await ctx.message.add_reaction(u"\u274C")
@@ -39,11 +35,7 @@ class Images(commands.Cog):
     async def remove_image(self, ctx, name, url):
         name = name.strip()
 
-        id_perso = None
-
-        ids = DatabasePersonality.get().get_perso_ids(name)
-        if ids:
-            id_perso = ids[0]
+        id_perso = DatabasePersonality.get().get_perso_id(name)
 
         if not id_perso:
             await ctx.message.add_reaction(u"\u274C")

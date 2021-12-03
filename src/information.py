@@ -26,7 +26,6 @@ class Information(commands.Cog):
                                                     '   *info jesus'
                                                     '   *info "Steve Carell" actor')
     async def information(self, ctx, name, group=None):
-        # TODO: add more information to the card (all groups...)
         name = name.strip()
 
         if group:
@@ -37,9 +36,7 @@ class Information(commands.Cog):
         if group:
             id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
         else:
-            ids = DatabasePersonality.get().get_perso_ids(name)
-            if ids:
-                id_perso = ids[0]
+            id_perso = DatabasePersonality.get().get_perso_id(name)
 
         if not id_perso:
             msg = f'I searched everywhere for **{name}**'
@@ -120,7 +117,7 @@ class Information(commands.Cog):
 
     @commands.command(description='List all personalities with its name')
     async def list(self, ctx, *, name):
-        ids = DatabasePersonality.get().get_perso_ids(name)
+        ids = DatabasePersonality.get().get_perso_ids_containing_name(name)
 
         if not ids:
             await ctx.send(f'No *{name}* personality found')

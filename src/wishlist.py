@@ -29,9 +29,7 @@ class Wishlist(commands.Cog):
         if group:
             id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
         else:
-            ids = DatabasePersonality.get().get_perso_ids(name)
-            if ids:
-                id_perso = ids[0]
+            id_perso = DatabasePersonality.get().get_perso_id(name)
 
         if not id_perso:
             await ctx.message.add_reaction(u"\u274C")
@@ -71,9 +69,7 @@ class Wishlist(commands.Cog):
         if group:
             id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
         else:
-            ids = DatabasePersonality.get().get_perso_ids(name)
-            if ids:
-                id_perso = ids[0]
+            id_perso = DatabasePersonality.get().get_perso_id(name)
 
         if not id_perso:
             await ctx.message.add_reaction(u"\u274C")
