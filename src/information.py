@@ -124,12 +124,10 @@ class Information(commands.Cog):
             return
 
         persos_text = []
-        for id_perso in ids:
-            image_number = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
-            perso = DatabasePersonality.get().get_perso_information(id_perso, image_number)
-            if not perso:
-                continue
-            persos_text.append(f'**{perso["name"]}** *{perso["group"]}*')
+        personalities = DatabasePersonality.get().get_multiple_perso_information(ids)
+        if personalities:
+            for perso in personalities:
+                persos_text.append(f'**{perso["name"]}** *{perso["group"]}*')
 
         persos_text.sort()
 
