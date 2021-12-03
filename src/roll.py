@@ -22,12 +22,17 @@ class Roll(commands.Cog):
             await ctx.send(f'You cannot roll right now. The next roll reset is in {minutes} minutes.')
             return
 
-        id_perso = DatabasePersonality.get().get_random_perso_id()
-        current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
-        perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
-        if not perso:
-            ctx.send("An error occurred. If this message is exceptional, "
-                     "please try again. Otherwise, contact the administrator.")
+        perso = None
+        id_perso = None
+
+        while not perso:
+            id_perso = DatabasePersonality.get().get_random_perso_id()
+            current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
+            perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
+
+        # if not perso:
+        #     ctx.send("An error occurred. If this message is exceptional, "
+        #              "please try again. Otherwise, contact the administrator.")
 
         # Mention users if they wish for this personality
         id_members = DatabaseDeck.get().get_wished_by(ctx.guild.id, id_perso)
