@@ -17,14 +17,9 @@ class Profile(commands.Cog):
 
     @commands.command(aliases=['pr'], description='Show the user profile or yours if no user given.')
     async def profile(self, ctx):
-        user = ctx.author if not ctx.message.mentions else ctx.message.mentions[0]
+        deck_owner = ctx.author if not ctx.message.mentions else ctx.message.mentions[0]
 
-        ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, user.id)
-
-        async def send_embed(desc):
-            embed = discord.Embed(title=user.name if user.nick is None else user.nick, description=desc)
-            embed.set_thumbnail(url=user.avatar_url)
-            await ctx.send(embed=embed)
+        ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, deck_owner.id)
 
         persos_text = []
         personalities = DatabasePersonality.get().get_multiple_perso_information(ids_deck)
@@ -38,9 +33,9 @@ class Profile(commands.Cog):
         nb_per_page = 20
         max_page = math.ceil(len(persos_text) / float(nb_per_page))
 
-        embed = discord.Embed(title=user.name if user.nick is None else user.nick,
+        embed = discord.Embed(title=deck_owner.name if deck_owner.nick is None else deck_owner.nick,
                               description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=deck_owner.avatar_url)
         embed.set_footer(text=f'{current_page} \\ {max_page}')
         msg = await ctx.send(embed=embed)
 
@@ -76,9 +71,9 @@ class Profile(commands.Cog):
 
                     # Refresh embed message with the new text
                     if old_page != current_page:
-                        embed = discord.Embed(title=user.name if user.nick is None else user.nick,
+                        embed = discord.Embed(title=deck_owner.name if deck_owner.nick is None else deck_owner.nick,
                                               description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_thumbnail(url=user.avatar_url)
+                        embed.set_thumbnail(url=deck_owner.avatar_url)
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
 
