@@ -146,7 +146,7 @@ class DatabasePersonality:
             return None
 
         return [{'id': perso[0], 'name': perso[1],
-                'group': perso[2]} for perso in personalities]
+                 'group': perso[2]} for perso in personalities]
 
     def add_image(self, id_perso, url):
         c = self.db.cursor()
@@ -229,6 +229,18 @@ class DatabaseDeck:
 
         return {'claim_interval': config[0], 'time_to_claim': config[1], 'rolls_per_hour': config[2]}
 
+    def get_servers_with_info_and_claims_channels(self):
+        c = self.db.cursor()
+        c.execute('''SELECT id, information_channel, claims_channel FROM Server 
+                    WHERE information_channel IS NOT NULL and claims_channel IS NOT NULL''')
+        res = c.fetchall()
+        c.close()
+        servers = []
+        for server in res:
+            servers.append({'id': server[0], 'information_channel': server[1], 'claims_channel': server[2]})
+
+        return servers
+
     def get_last_claim(self, id_server, id_member):
         """Return last claim date or -1 otherwise."""
         c = self.db.cursor()
@@ -266,6 +278,24 @@ class DatabaseDeck:
         c = self.db.cursor()
         c.execute('''INSERT OR IGNORE INTO MemberInformation(id_server, id_member)
                      VALUES (?, ?)''', (id_server, id_member))
+        self.db.commit()
+        c.close()
+
+    def set_information_channel(self, id_server, id_channel):
+        self.create_server_if_not_exist(id_server)
+        c = self.db.cursor()
+        c.execute('''UPDATE Server
+                     SET information_channel = ?
+                     WHERE id = ?''', (id_channel, id_server))
+        self.db.commit()
+        c.close()
+
+    def set_claims_channel(self, id_server, id_channel):
+        self.create_server_if_not_exist(id_server)
+        c = self.db.cursor()
+        c.execute('''UPDATE Server
+                     SET claims_channel = ?
+                     WHERE id = ?''', (id_channel, id_server))
         self.db.commit()
         c.close()
 
@@ -503,7 +533,7 @@ class DatabaseDeck:
             current_image = current_image - 1
         else:
             image_count = DatabasePersonality.get().get_perso_images_count(id_perso)
-            current_image = (image_count-1)
+            current_image = (image_count - 1)
 
         self.update_perso_current_image(id_server, id_perso, current_image)
         return current_image
@@ -514,7 +544,7 @@ class DatabaseDeck:
         current_image = self.get_perso_current_image(id_server, id_perso)
         image_count = DatabasePersonality.get().get_perso_images_count(id_perso)
 
-        if current_image < (image_count-1):
+        if current_image < (image_count - 1):
             current_image = current_image + 1
         else:
             current_image = 0

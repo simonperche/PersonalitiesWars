@@ -2,7 +2,9 @@ CREATE TABLE Server (
 id INT PRIMARY KEY,
 claim_interval INT DEFAULT 180, --in minutes
 time_to_claim INT DEFAULT 15, -- in seconds
-rolls_per_hour INT DEFAULT 5
+rolls_per_hour INT DEFAULT 5,
+information_channel INT DEFAULT NULL,
+claims_channel INT DEFAULT NULL
 );
 
 CREATE TABLE Member (

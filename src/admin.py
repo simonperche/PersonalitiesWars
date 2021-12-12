@@ -82,3 +82,29 @@ class Admin(commands.Cog):
 
         embed = discord.Embed(title=f'Server *{ctx.guild.name}* configuration', description=description)
         await ctx.send(embed=embed)
+
+    @commands.command(description='Set the information channel where the bot can send message updates.')
+    @has_permissions(administrator=True)
+    async def set_information_channel(self, ctx):
+        channels_mentions = ctx.message.channel_mentions
+        if not channels_mentions:
+            await ctx.send('I have removed information channel. You will not receive update anymore.')
+            DatabaseDeck.get().set_information_channel(ctx.guild.id, None)
+            return
+
+        info_channel_id = channels_mentions[0].id
+        DatabaseDeck.get().set_information_channel(ctx.guild.id, info_channel_id)
+        await ctx.message.add_reaction(u"\u2705")
+
+    @commands.command(description='Set the claims channel where users rolls and claims personalities (used to display a recap of claims).')
+    @has_permissions(administrator=True)
+    async def set_claims_channel(self, ctx):
+        channels_mentions = ctx.message.channel_mentions
+        if not channels_mentions:
+            await ctx.send('I have removed claims channel. You will not receive a recap anymore.')
+            DatabaseDeck.get().set_claims_channel(ctx.guild.id, None)
+            return
+
+        info_channel_id = channels_mentions[0].id
+        DatabaseDeck.get().set_claims_channel(ctx.guild.id, info_channel_id)
+        await ctx.message.add_reaction(u"\u2705")

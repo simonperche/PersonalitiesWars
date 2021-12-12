@@ -5,6 +5,8 @@ import datetime
 
 import discord
 from discord.ext import commands
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from database import DatabasePersonality, DatabaseDeck
 
@@ -14,6 +16,10 @@ class Information(commands.Cog):
     def __init__(self, bot):
         """Initial the cog with the bot."""
         self.bot = bot
+
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(self.send_last_claims_on_servers, CronTrigger(hour=8, minute=0, second=0))
+        scheduler.start()
 
     #### Commands ####
 
@@ -294,6 +300,13 @@ class Information(commands.Cog):
         embed = await self.last_claims_function(ctx.channel)
         await ctx.send(embed=embed)
 
+    async def send_last_claims_on_servers(self):
+        servers = DatabaseDeck.get().get_servers_with_info_and_claims_channels()
+        for server in servers:
+            guild = self.bot.get_guild(server['id'])
+            embed = await self.last_claims_function(guild.get_channel(server['claims_channel']))
+            await guild.get_channel(server['information_channel']).send(embed=embed)
+
     # Get last claims in channel and return an embed
     async def last_claims_function(self, channel: discord.TextChannel):
         yesterday = datetime.datetime.utcnow().today() - datetime.timedelta(days=1)
@@ -303,14 +316,17 @@ class Information(commands.Cog):
             if message.author != self.bot.user:
                 continue
 
-            if ' claims ' in message.content:
+            if ' claims ' in message.content and message.content.endswith('!'):
                 s = message.content.split(' claims ')
                 owner = s[0]
                 # Remove '!'
                 personality = s[1][:-1]
                 claims.append(f'**{personality}** - {owner}')
 
-        return discord.Embed(title='Last 24h claims', description='\n'.join(claims) if claims else 'No one has claimed anything...')
+        embed = discord.Embed(title='Last 24h claims', description='\n'.join(claims) if claims else 'No one has claimed anything...')
+        embed.set_footer(text=f'Channel {channel.name}')
+
+        return embed
 
 
 def parse_int(content):
