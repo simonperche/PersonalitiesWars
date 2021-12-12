@@ -94,18 +94,18 @@ class Wishlist(commands.Cog):
         nb_wish = DatabaseDeck.get().get_nb_wish(ctx.guild.id, ctx.author.id)
         max_wish = DatabaseDeck.get().get_max_wish(ctx.guild.id, ctx.author.id)
 
-        for id_perso in ids:
-            current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
-            perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
-            id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
-            emoji = ''
+        personalities = DatabasePersonality.get().get_multiple_perso_information(ids)
+        if personalities:
+            for i, perso in enumerate(personalities):
+                id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, ids[i])
+                emoji = ''
 
-            if id_owner:
-                if id_owner == ctx.author.id:
-                    emoji = u"\u2705"
-                else:
-                    emoji = u"\u274C"
-            description += f'**{perso["name"]}** *{perso["group"]}* {emoji}\n'
+                if id_owner:
+                    if id_owner == ctx.author.id:
+                        emoji = u"\u2705"
+                    else:
+                        emoji = u"\u274C"
+                description += f'**{perso["name"]}** *{perso["group"]}* {emoji}\n'
 
         await ctx.send(embed=discord.Embed(title=f'Wish list of {username} ({nb_wish}/{max_wish})',
                                            description=description))
