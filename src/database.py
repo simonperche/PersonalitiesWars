@@ -381,6 +381,28 @@ class DatabaseDeck:
 
         return nb_rolls[0]
 
+    def get_id_perso_profile(self, id_server, id_member):
+        c = self.db.cursor()
+        c.execute('''SELECT id_perso_profile
+                     FROM MemberInformation
+                     WHERE id_server = ? AND id_member = ?''', (id_server, id_member))
+        id_perso_profile = c.fetchone()
+        c.close()
+
+        if not id_perso_profile:
+            return None
+
+        return id_perso_profile[0]
+
+    def set_id_perso_profile(self, id_server, id_member, value):
+        c = self.db.cursor()
+        self.create_member_information_if_not_exist(id_server, id_member)
+        c.execute('''UPDATE MemberInformation
+                     SET id_perso_profile = ?
+                     WHERE id_server = ? AND id_member = ?''', (value, id_server, id_member))
+        self.db.commit()
+        c.close()
+
     def set_nb_rolls(self, id_server, id_member, value):
         c = self.db.cursor()
         self.create_member_information_if_not_exist(id_server, id_member)

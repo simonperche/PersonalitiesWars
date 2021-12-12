@@ -1,6 +1,7 @@
 from datetime import datetime
 import asyncio
 import math
+from collections import defaultdict
 
 import discord
 from discord.ext import commands
@@ -17,6 +18,42 @@ class Profile(commands.Cog):
 
     @commands.command(aliases=['pr'], description='Show the user profile or yours if no user given.')
     async def profile(self, ctx):
+        profile_owner = ctx.author if not ctx.message.mentions else ctx.message.mentions[0]
+        id_perso_profile = DatabaseDeck.get().get_id_perso_profile(ctx.guild.id, profile_owner.id)
+
+        image = profile_owner.avatar_url
+
+        if id_perso_profile:
+            current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso_profile)
+            perso = DatabasePersonality.get().get_perso_information(id_perso_profile, current_image)
+
+            # Show profile's perso only if user owns the personality (might not be the case with trade, give and discard)
+            owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, perso['id'])
+            if owner and owner == profile_owner.id:
+                image = perso['image']
+
+        ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, profile_owner.id)
+
+        groups_count = defaultdict(int)  # Default value of 0
+        personalities = DatabasePersonality.get().get_multiple_perso_information(ids_deck)
+        if personalities:
+            for perso in personalities:
+                groups_count[perso["group"]] += 1
+
+        # Keep only the 10 most popular groups
+        groups = sorted(groups_count.items(), key=lambda item: item[1], reverse=True)[:10]
+
+        embed = discord.Embed(title=f'Profile of {profile_owner.name if profile_owner.nick is None else profile_owner.nick}', type='rich')
+        embed.description = f'You own {len(ids_deck)} personalit{"ies" if len(ids_deck) > 1 else "y"}!'
+        embed.add_field(name='Badges', value='WIP...')
+        if groups:
+            embed.add_field(name='Most owned groups', value='\n'.join([f'*{group[0].capitalize()}* ({group[1]})' for group in groups]))
+        embed.set_thumbnail(url=image)
+
+        await ctx.send(embed=embed)
+
+    @commands.command(description='Show the user deck or yours if no user given.')
+    async def deck(self, ctx):
         deck_owner = ctx.author if not ctx.message.mentions else ctx.message.mentions[0]
 
         ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, deck_owner.id)
@@ -76,6 +113,38 @@ class Profile(commands.Cog):
                         embed.set_thumbnail(url=deck_owner.avatar_url)
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
+
+    @commands.command(description='Set the profile personality (shown on profile).\nYou can write null as name to remove the current personality.')
+    async def set_perso_profile(self, ctx, name, group=None):
+        if name.lower() == 'null':
+            DatabaseDeck.get().set_id_perso_profile(ctx.guild.id, ctx.author.id, None)
+            await ctx.message.add_reaction(u"\u2705")
+            await ctx.send('I removed your profile\'s personality.')
+            return
+
+        name = name.strip()
+
+        if group:
+            group = group.strip()
+
+        if group:
+            id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
+        else:
+            id_perso = DatabasePersonality.get().get_perso_id(name)
+
+        if not id_perso:
+            await ctx.message.add_reaction(u"\u274C")
+            await ctx.send(f'Personality **{name}**{" from *" + group + "* " if group else ""} not found.')
+            return
+
+        owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
+        if not owner or owner != ctx.author.id:
+            await ctx.message.add_reaction(u"\u274C")
+            await ctx.send(f'You don\'t own **{name}**{" from *" + group + "* " if group else ""}...')
+            return None
+
+        DatabaseDeck.get().set_id_perso_profile(ctx.guild.id, ctx.author.id, id_perso)
+        await ctx.message.add_reaction(u"\u2705")
 
     @commands.command(aliases=['tu'], description='Show time before next rolls and claim reset.')
     async def time(self, ctx):
