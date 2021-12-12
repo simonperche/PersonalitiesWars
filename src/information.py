@@ -1,6 +1,7 @@
 import asyncio
 import secrets
 import math
+import datetime
 
 import discord
 from discord.ext import commands
@@ -287,6 +288,29 @@ class Information(commands.Cog):
                                               description='\n'.join([f'**{group}**' for group in groups[(current_page-1) * nb_per_page:current_page * nb_per_page]]))
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
+
+    @commands.command(description='Show last claims of the last 24h of the current channel.')
+    async def last_claims(self, ctx):
+        embed = await self.last_claims_function(ctx.channel)
+        await ctx.send(embed=embed)
+
+    # Get last claims in channel and return an embed
+    async def last_claims_function(self, channel: discord.TextChannel):
+        yesterday = datetime.datetime.utcnow().today() - datetime.timedelta(days=1)
+        claims = []
+
+        async for message in channel.history(limit=None, after=yesterday, oldest_first=True):
+            if message.author != self.bot.user:
+                continue
+
+            if ' claims ' in message.content:
+                s = message.content.split(' claims ')
+                owner = s[0]
+                # Remove '!'
+                personality = s[1][:-1]
+                claims.append(f'**{personality}** - {owner}')
+
+        return discord.Embed(title='Last 24h claims', description='\n'.join(claims) if claims else 'No one has claimed anything...')
 
 
 def parse_int(content):
