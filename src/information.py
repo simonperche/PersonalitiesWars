@@ -25,10 +25,9 @@ class Information(commands.Cog):
 
     #### Commands ####
 
-    @slash_command(aliases=['info'], description='Show information about a personality. '
-                                                 'Please add "" around name if it has space.',
+    @slash_command(aliases=['info'], description='Show information about a personality.',
                    guild_ids=utils.get_authorized_guild_ids())
-    async def information(self, ctx, name, group=None):
+    async def information(self, ctx, name: str, group: str = None):
         name = name.strip()
 
         if group:
@@ -119,7 +118,7 @@ class Information(commands.Cog):
 
     @slash_command(description='List all personalities with its name',
                    guild_ids=utils.get_authorized_guild_ids())
-    async def list(self, ctx, *, name):
+    async def list(self, ctx, name: str):
         ids = DatabasePersonality.get().get_perso_ids_containing_name(name)
 
         if not ids:
@@ -184,7 +183,7 @@ class Information(commands.Cog):
 
     @slash_command(description='Show all members of a group',
                    guild_ids=utils.get_authorized_guild_ids())
-    async def group(self, ctx, *, group_name):
+    async def group(self, ctx, group_name: str):
         group = DatabasePersonality.get().get_group_members(group_name)
 
         if not group:
