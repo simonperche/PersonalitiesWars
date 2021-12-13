@@ -5,10 +5,12 @@ import datetime
 
 import discord
 from discord.ext import commands
+from discord.commands import slash_command
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from database import DatabasePersonality, DatabaseDeck
+import utils
 
 
 class Information(commands.Cog):
@@ -23,22 +25,14 @@ class Information(commands.Cog):
 
     #### Commands ####
 
-    @commands.command(aliases=['info'], description='Show information about a personality. '
-                                                    'Please enter the name of the personality '
-                                                    'with group (optional). Please add ""'
-                                                    'if it has spaces\n'
-                                                    'Take the first corresponding personality.'
-                                                    'See list command for all personalities.\n'
-                                                    'Example:\n'
-                                                    '   *info jesus'
-                                                    '   *info "Steve Carell" actor')
+    @slash_command(aliases=['info'], description='Show information about a personality. '
+                                                 'Please add "" around name if it has space.',
+                   guild_ids=utils.get_authorized_guild_ids())
     async def information(self, ctx, name, group=None):
         name = name.strip()
 
         if group:
             group = group.strip()
-
-        id_perso = None
 
         if group:
             id_perso = DatabasePersonality.get().get_perso_group_id(name, group)
@@ -50,7 +44,7 @@ class Information(commands.Cog):
             if group:
                 msg += f' in the group *{group}*'
             msg += ' and I couldn\'t find anything.\nPlease check the command.'
-            await ctx.send(msg)
+            await ctx.respond(msg)
             return
 
         current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
@@ -76,7 +70,8 @@ class Information(commands.Cog):
 
         embed.set_image(url=perso['image'])
 
-        msg = await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
+        msg = await ctx.interaction.original_message()
 
         left_emoji = '\U00002B05'
         right_emoji = '\U000027A1'
@@ -122,12 +117,13 @@ class Information(commands.Cog):
 
                     await msg.edit(embed=embed)
 
-    @commands.command(description='List all personalities with its name')
+    @slash_command(description='List all personalities with its name',
+                   guild_ids=utils.get_authorized_guild_ids())
     async def list(self, ctx, *, name):
         ids = DatabasePersonality.get().get_perso_ids_containing_name(name)
 
         if not ids:
-            await ctx.send(f'No *{name}* personality found')
+            await ctx.respond(f'No *{name}* personality found')
             return
 
         persos_text = []
@@ -145,7 +141,8 @@ class Information(commands.Cog):
         embed = discord.Embed(title=f'*{name}* personality',
                               description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
         embed.set_footer(text=f'{current_page} \\ {max_page}')
-        msg = await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
+        msg = await ctx.interaction.original_message()
 
         if max_page > 1:
             # Page handler
@@ -185,12 +182,13 @@ class Information(commands.Cog):
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
 
-    @commands.command(description='Show all members of a group')
+    @slash_command(description='Show all members of a group',
+                   guild_ids=utils.get_authorized_guild_ids())
     async def group(self, ctx, *, group_name):
         group = DatabasePersonality.get().get_group_members(group_name)
 
         if not group:
-            await ctx.send(f'No *{group_name}* group found.')
+            await ctx.respond(f'No *{group_name}* group found.')
             return
 
         current_page = 1
@@ -201,7 +199,8 @@ class Information(commands.Cog):
                               description='\n'.join([f'**{member}**' for member in group['members'][(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
         embed.set_footer(text=f'{current_page} \\ {max_page}')
 
-        msg = await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
+        msg = await ctx.interaction.original_message()
 
         if max_page > 1:
             # Page handler
@@ -240,12 +239,13 @@ class Information(commands.Cog):
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
 
-    @commands.command(description='Show all groups available')
+    @slash_command(description='Show all groups available',
+                   guild_ids=utils.get_authorized_guild_ids())
     async def list_groups(self, ctx):
         groups = DatabasePersonality.get().get_all_groups()
 
         if not groups:
-            await ctx.send(f'No group found. This is probably an error.')
+            await ctx.respond(f'No group found. This is probably an error.')
             return
 
         current_page = 1
@@ -256,7 +256,8 @@ class Information(commands.Cog):
                               description='\n'.join([f'**{group}**' for group in groups[(current_page-1)*nb_per_page:current_page*nb_per_page]]))
         embed.set_footer(text=f'{current_page} \\ {max_page}')
 
-        msg = await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
+        msg = await ctx.interaction.original_message()
 
         if max_page > 1:
             # Page handler
@@ -295,10 +296,11 @@ class Information(commands.Cog):
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
 
-    @commands.command(description='Show last claims of the last 24h of the current channel.')
+    @slash_command(description='Show last claims of the last 24h of the current channel.',
+                   guild_ids=utils.get_authorized_guild_ids())
     async def last_claims(self, ctx):
         embed = await self.last_claims_function(ctx.channel)
-        await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
 
     async def send_last_claims_on_servers(self):
         servers = DatabaseDeck.get().get_servers_with_info_and_claims_channels()

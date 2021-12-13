@@ -11,6 +11,7 @@ from information import Information
 from wishlist import Wishlist
 from trade import Trade
 from images import Images
+import utils
 
 intents = discord.Intents.default()
 intents.members = True
@@ -27,12 +28,12 @@ bot.add_cog(Wishlist(bot))
 bot.add_cog(Trade(bot))
 bot.add_cog(Images(bot))
 
+
 #### Bot commands ####
 
-@bot.command()
+@bot.slash_command(guild_ids=utils.get_authorized_guild_ids())
 async def ping(ctx):
-    await ctx.message.delete()
-    await ctx.send('Yup, I\'m awake.', delete_after=5)
+    await ctx.respond('Yup, I\'m awake.', delete_after=5)
 
 
 #### Bot event handlers ####
@@ -43,6 +44,8 @@ async def on_ready():
     print(bot.user.name)
     print(bot.user.id)
     print('------')
+    for guild in utils.get_authorized_guild_ids():
+        print(bot.get_guild(guild))
 
 
 @bot.event
