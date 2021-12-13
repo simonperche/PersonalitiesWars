@@ -5,9 +5,11 @@ from collections import defaultdict
 
 import discord
 from discord.ext import commands
+from discord.commands import slash_command, Option
 
 from database import DatabaseDeck, DatabasePersonality
 from roll import min_until_next_claim
+import utils
 
 class Profile(commands.Cog):
     def __init__(self, bot):
@@ -16,12 +18,13 @@ class Profile(commands.Cog):
 
     #### Commands ####
 
-    @commands.command(aliases=['pr'], description='Show the user profile or yours if no user given.')
-    async def profile(self, ctx):
-        profile_owner = ctx.author if not ctx.message.mentions else ctx.message.mentions[0]
+    @slash_command(aliases=['pr'], description='Show the user profile or yours if no user given.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    async def profile(self, ctx, member: Option(discord.Member, required=False, default=None)):
+        profile_owner = member or ctx.author
         id_perso_profile = DatabaseDeck.get().get_id_perso_profile(ctx.guild.id, profile_owner.id)
 
-        image = profile_owner.avatar.url
+        image = profile_owner.avatar.url if profile_owner.avatar else None
 
         if id_perso_profile:
             current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso_profile)
@@ -48,13 +51,15 @@ class Profile(commands.Cog):
         embed.add_field(name='Badges', value='WIP...')
         if groups:
             embed.add_field(name='Most owned groups', value='\n'.join([f'*{group[0].capitalize()}* ({group[1]})' for group in groups]))
-        embed.set_thumbnail(url=image)
+        if image:
+            embed.set_thumbnail(url=image)
 
-        await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
 
-    @commands.command(description='Show the user deck or yours if no user given.')
-    async def deck(self, ctx):
-        deck_owner = ctx.author if not ctx.message.mentions else ctx.message.mentions[0]
+    @slash_command(description='Show the user deck or yours if no user given.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    async def deck(self, ctx, member: Option(discord.Member, required=False, default=None)):
+        deck_owner = member or ctx.author
 
         ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, deck_owner.id)
 
@@ -72,9 +77,11 @@ class Profile(commands.Cog):
 
         embed = discord.Embed(title=deck_owner.name if deck_owner.nick is None else deck_owner.nick,
                               description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        embed.set_thumbnail(url=deck_owner.avatar.url)
+        if deck_owner.avatar:
+            embed.set_thumbnail(url=deck_owner.avatar.url)
         embed.set_footer(text=f'{current_page} \\ {max_page}')
-        msg = await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
+        msg = await ctx.interaction.original_message()
 
         if max_page > 1:
             # Page handler
@@ -114,12 +121,13 @@ class Profile(commands.Cog):
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
 
-    @commands.command(description='Set the profile personality (shown on profile).\nYou can write null as name to remove the current personality.')
-    async def set_perso_profile(self, ctx, name, group=None):
-        if name.lower() == 'null':
+    @slash_command(description='Set the profile displayed personality.\n'
+                               'You can leave name blank to remove the current personality.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    async def set_perso_profile(self, ctx, name: str = None, group: str = None):
+        if name is None:
             DatabaseDeck.get().set_id_perso_profile(ctx.guild.id, ctx.author.id, None)
-            await ctx.message.add_reaction(u"\u2705")
-            await ctx.send('I removed your profile\'s personality.')
+            await ctx.respond('I removed your profile\'s personality.')
             return
 
         name = name.strip()
@@ -133,20 +141,19 @@ class Profile(commands.Cog):
             id_perso = DatabasePersonality.get().get_perso_id(name)
 
         if not id_perso:
-            await ctx.message.add_reaction(u"\u274C")
-            await ctx.send(f'Personality **{name}**{" from *" + group + "* " if group else ""} not found.')
+            await ctx.respond(f'Personality **{name}**{" from *" + group + "* " if group else ""} not found.')
             return
 
         owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
         if not owner or owner != ctx.author.id:
-            await ctx.message.add_reaction(u"\u274C")
-            await ctx.send(f'You don\'t own **{name}**{" from *" + group + "* " if group else ""}...')
+            await ctx.respond(f'You don\'t own **{name}**{" from *" + group + "* " if group else ""}...')
             return None
 
         DatabaseDeck.get().set_id_perso_profile(ctx.guild.id, ctx.author.id, id_perso)
-        await ctx.message.add_reaction(u"\u2705")
+        await ctx.respond(f'Set your perso profile to {name} {group if group else ""}')
 
-    @commands.command(aliases=['tu'], description='Show time before next rolls and claim reset.')
+    @slash_command(description='Show time before next rolls and claim reset.',
+                   guild_ids=utils.get_authorized_guild_ids())
     async def time(self, ctx):
         next_claim = min_until_next_claim(ctx.guild.id, ctx.author.id)
 
@@ -177,4 +184,4 @@ class Profile(commands.Cog):
         msg += f'\nYou have **{max_rolls - user_nb_rolls}** rolls left.\n' \
                f'Next rolls reset in **{60 - datetime.now().minute} min**.'
 
-        await ctx.send(msg)
+        await ctx.respond(msg)

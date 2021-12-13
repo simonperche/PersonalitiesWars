@@ -25,7 +25,7 @@ class Information(commands.Cog):
 
     #### Commands ####
 
-    @slash_command(aliases=['info'], description='Show information about a personality.',
+    @slash_command(description='Show information about a personality.',
                    guild_ids=utils.get_authorized_guild_ids())
     async def information(self, ctx, name: str, group: str = None):
         name = name.strip()
