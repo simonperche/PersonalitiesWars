@@ -21,7 +21,7 @@ class Profile(commands.Cog):
         profile_owner = ctx.author if not ctx.message.mentions else ctx.message.mentions[0]
         id_perso_profile = DatabaseDeck.get().get_id_perso_profile(ctx.guild.id, profile_owner.id)
 
-        image = profile_owner.avatar_url
+        image = profile_owner.avatar.url
 
         if id_perso_profile:
             current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso_profile)
@@ -72,7 +72,7 @@ class Profile(commands.Cog):
 
         embed = discord.Embed(title=deck_owner.name if deck_owner.nick is None else deck_owner.nick,
                               description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        embed.set_thumbnail(url=deck_owner.avatar_url)
+        embed.set_thumbnail(url=deck_owner.avatar.url)
         embed.set_footer(text=f'{current_page} \\ {max_page}')
         msg = await ctx.send(embed=embed)
 
@@ -110,7 +110,7 @@ class Profile(commands.Cog):
                     if old_page != current_page:
                         embed = discord.Embed(title=deck_owner.name if deck_owner.nick is None else deck_owner.nick,
                                               description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_thumbnail(url=deck_owner.avatar_url)
+                        embed.set_thumbnail(url=deck_owner.avatar.url)
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
 
