@@ -30,7 +30,7 @@ id_server INT,
 id_perso INT,
 id_member INT,
 current_image INT DEFAULT 0,
-FOREIGN KEY (id_server) REFERENCES Server(id),*
+FOREIGN KEY (id_server) REFERENCES Server(id),
 FOREIGN KEY (id_member) REFERENCES Member(id),
 PRIMARY KEY (id_server, id_perso)
 );
