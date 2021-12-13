@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions
+from discord.commands import slash_command, permissions, Option
 
 from database import DatabaseDeck
+import utils
 
 class Admin(commands.Cog):
     def __init__(self, bot):
@@ -11,68 +13,37 @@ class Admin(commands.Cog):
 
     #### Commands ####
 
-    @commands.command(description='Set the claiming interval in minutes for all users.')
-    @has_permissions(administrator=True)
-    async def set_claiming_interval(self, ctx, interval):
-        try:
-            interval = int(interval)
-        except ValueError:
-            await ctx.send('Please enter minutes as number.')
-            await ctx.message.add_reaction(u"\u274C")
-            return
-
+    @slash_command(description='Set the claiming interval in minutes for all users.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def set_claiming_interval(self, ctx, interval: int):
         DatabaseDeck.get().set_claiming_interval(ctx.guild.id, interval)
-        await ctx.message.add_reaction(u"\u2705")
+        await ctx.respond(f'Set to {interval}.')
 
-    @commands.command(description='Set the number of rolls per hour for all users.')
-    @has_permissions(administrator=True)
-    async def set_nb_rolls_per_hour(self, ctx, nb_rolls):
-        try:
-            nb_rolls = int(nb_rolls)
-        except ValueError:
-            await ctx.send('Please enter number of rolls as number.')
-            await ctx.message.add_reaction(u"\u274C")
-            return
-
+    @slash_command(description='Set the number of rolls per hour for all users.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def set_nb_rolls_per_hour(self, ctx, nb_rolls: int):
         DatabaseDeck.get().set_nb_rolls_per_hour(ctx.guild.id, nb_rolls)
-        await ctx.message.add_reaction(u"\u2705")
+        await ctx.respond(f'Set to {nb_rolls}.')
 
-    @commands.command(description='Set the amount of time to claim (in seconds) for all users.')
-    @has_permissions(administrator=True)
-    async def set_time_to_claim(self, ctx, time_to_claim):
-        try:
-            time_to_claim = int(time_to_claim)
-        except ValueError:
-            await ctx.send('Please enter time to claim as number.')
-            await ctx.message.add_reaction(u"\u274C")
-            return
-
+    @slash_command(description='Set the amount of time to claim (in seconds) for all users.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def set_time_to_claim(self, ctx, time_to_claim: int):
         DatabaseDeck.get().set_time_to_claim(ctx.guild.id, time_to_claim)
-        await ctx.message.add_reaction(u"\u2705")
+        await ctx.respond(f'Set to {time_to_claim}')
 
-    @commands.command(description='Set number of wishes allowed to a user. '
-                                  'Please use discord mention to indicate the user.')
-    @has_permissions(administrator=True)
-    async def set_max_wish(self, ctx, max_wish):
-        if not ctx.message.mentions:
-            await ctx.send('Please mention a user.')
-            await ctx.message.add_reaction(u"\u274C")
-            return
-
-        user = ctx.message.mentions[0]
-
-        try:
-            max_wish = int(max_wish)
-        except ValueError:
-            await ctx.send('Please enter a number.')
-            await ctx.message.add_reaction(u"\u274C")
-            return
-
+    @slash_command(description='Set number of wishes allowed to a user.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def set_max_wish(self, ctx, user: Option(discord.Member), max_wish: int):
         DatabaseDeck.get().set_max_wish(ctx.guild.id, user.id, max_wish)
-        await ctx.message.add_reaction(u"\u2705")
+        await ctx.respond(f'Set {user.name if user.nick is None else user.name} number of wishes to {max_wish}.')
 
-    @commands.command(aliases=['show_config'], description='Show the current configuration of the bot for this server.')
-    @has_permissions(administrator=True)
+    @slash_command(aliases=['show_config'], description='Show the current configuration of the bot for this server.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
     async def show_configuration(self, ctx):
         config = DatabaseDeck.get().get_server_configuration(ctx.guild.id)
 
@@ -81,30 +52,29 @@ class Admin(commands.Cog):
                       f'Number of rolls per hour: {config["rolls_per_hour"]}'
 
         embed = discord.Embed(title=f'Server *{ctx.guild.name}* configuration', description=description)
-        await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
 
-    @commands.command(description='Set the information channel where the bot can send message updates.')
-    @has_permissions(administrator=True)
-    async def set_information_channel(self, ctx):
-        channels_mentions = ctx.message.channel_mentions
-        if not channels_mentions:
-            await ctx.send('I have removed information channel. You will not receive update anymore.')
+    @slash_command(description='Set the information channel where the bot can send message updates.',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def set_information_channel(self, ctx, channel: Option(discord.TextChannel, required=False, default=None)):
+        if not channel:
             DatabaseDeck.get().set_information_channel(ctx.guild.id, None)
+            await ctx.respond('I have removed information channel. You will not receive update anymore.')
             return
 
-        info_channel_id = channels_mentions[0].id
-        DatabaseDeck.get().set_information_channel(ctx.guild.id, info_channel_id)
-        await ctx.message.add_reaction(u"\u2705")
+        DatabaseDeck.get().set_information_channel(ctx.guild.id, channel.id)
+        await ctx.respond(f'Set to {channel.mention}.')
 
-    @commands.command(description='Set the claims channel where users rolls and claims personalities (used to display a recap of claims).')
-    @has_permissions(administrator=True)
-    async def set_claims_channel(self, ctx):
-        channels_mentions = ctx.message.channel_mentions
-        if not channels_mentions:
-            await ctx.send('I have removed claims channel. You will not receive a recap anymore.')
+    @slash_command(description='Set the claims channel where users roll and '
+                               'claim personalities (used to display a recap of claims)',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def set_claims_channel(self, ctx, channel: Option(discord.TextChannel, required=False, default=None)):
+        if not channel:
             DatabaseDeck.get().set_claims_channel(ctx.guild.id, None)
+            await ctx.respond('I have removed claims channel. You will not receive a recap anymore.')
             return
 
-        info_channel_id = channels_mentions[0].id
-        DatabaseDeck.get().set_claims_channel(ctx.guild.id, info_channel_id)
-        await ctx.message.add_reaction(u"\u2705")
+        DatabaseDeck.get().set_claims_channel(ctx.guild.id, channel.id)
+        await ctx.respond(f'Set to {channel.mention}.')
