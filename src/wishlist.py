@@ -86,13 +86,15 @@ class Wishlist(commands.Cog):
 
     @commands.command(aliases=['wl'], description='Show your wishlist.')
     async def wishlist(self, ctx):
-        ids = DatabaseDeck.get().get_wishlist(ctx.guild.id, ctx.author.id)
+        wishlist_owner = ctx.author if not ctx.message.mentions else ctx.message.mentions[0]
+
+        ids = DatabaseDeck.get().get_wishlist(ctx.guild.id, wishlist_owner.id)
 
         description = ''
-        username = ctx.author.name if ctx.author.nick is None else ctx.author.nick
+        username = wishlist_owner.name if wishlist_owner.nick is None else wishlist_owner.nick
 
-        nb_wish = DatabaseDeck.get().get_nb_wish(ctx.guild.id, ctx.author.id)
-        max_wish = DatabaseDeck.get().get_max_wish(ctx.guild.id, ctx.author.id)
+        nb_wish = DatabaseDeck.get().get_nb_wish(ctx.guild.id, wishlist_owner.id)
+        max_wish = DatabaseDeck.get().get_max_wish(ctx.guild.id, wishlist_owner.id)
 
         personalities = DatabasePersonality.get().get_multiple_perso_information(ids)
         if personalities:
@@ -101,7 +103,7 @@ class Wishlist(commands.Cog):
                 emoji = ''
 
                 if id_owner:
-                    if id_owner == ctx.author.id:
+                    if id_owner == wishlist_owner.id:
                         emoji = u"\u2705"
                     else:
                         emoji = u"\u274C"
