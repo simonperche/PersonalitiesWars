@@ -4,8 +4,10 @@ from datetime import datetime
 
 import discord
 from discord.ext import commands
+from discord.commands import slash_command
 
 from database import DatabasePersonality, DatabaseDeck
+import utils
 
 
 class Roll(commands.Cog):
@@ -15,33 +17,23 @@ class Roll(commands.Cog):
 
     #### Commands ####
 
-    @commands.command(description='Roll a random idom and get the possibility to claim it.')
+    @slash_command(description='Roll a random idom and get the possibility to claim it.',
+                   guild_ids=utils.get_authorized_guild_ids())
     async def roll(self, ctx):
         minutes = min_until_next_roll(ctx.guild.id, ctx.author.id)
         if minutes != 0:
-            await ctx.send(f'You cannot roll right now. The next roll reset is in {minutes} minutes.')
+            await ctx.respond(f'You cannot roll right now. The next roll reset is in {minutes} minutes.')
             return
 
         perso = None
         id_perso = None
 
+        msg_embed = ''
+
         while not perso:
             id_perso = DatabasePersonality.get().get_random_perso_id()
             current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
             perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
-
-        # Mention users if they wish for this personality
-        id_members = DatabaseDeck.get().get_wished_by(ctx.guild.id, id_perso)
-
-        wish_msg = ''
-        for id_member in id_members:
-            member = ctx.guild.get_member(id_member)
-            # Could be None if the user left the server
-            if member:
-                wish_msg += f'{member.mention} '
-
-        if wish_msg:
-            await ctx.send(f'Wished by {wish_msg}')
 
         # Update roll information in database
         DatabaseDeck.get().update_last_roll(ctx.guild.id, ctx.author.id)
@@ -50,7 +42,7 @@ class Roll(commands.Cog):
 
         max_rolls = DatabaseDeck.get().get_rolls_per_hour(ctx.guild.id)
         if max_rolls - user_nb_rolls - 1 == 2:
-            await ctx.send(f'**{ctx.author.name if ctx.author.nick is None else ctx.author.nick}**, 2 uses left.')
+            msg_embed += f'**{ctx.author.name if ctx.author.nick is None else ctx.author.nick}**, 2 uses left.\n'
 
         embed = discord.Embed(title=perso['name'], description=perso['group'], colour=secrets.randbelow(0xffffff))
         embed.set_image(url=perso['image'])
@@ -64,7 +56,21 @@ class Roll(commands.Cog):
                 embed.set_footer(icon_url=owner.avatar.url,
                                  text=f'Belongs to {owner.name if not owner.nick else owner.nick}')
 
-        msg = await ctx.send(embed=embed)
+        # Mention users if they wish for this personality
+        id_members = DatabaseDeck.get().get_wished_by(ctx.guild.id, id_perso)
+
+        wish_msg = ''
+        for id_member in id_members:
+            member = ctx.guild.get_member(id_member)
+            # Could be None if the user left the server
+            if member:
+                wish_msg += f'{member.mention} '
+
+        if wish_msg:
+            msg_embed += f'Wished by {wish_msg}'
+
+        await ctx.respond(msg_embed, embed=embed)
+        msg = await ctx.interaction.original_message()
 
         # Cannot claim if perso already claim
         if id_owner:
