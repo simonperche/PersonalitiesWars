@@ -64,7 +64,10 @@ class Information(commands.Cog):
             owner = ctx.guild.get_member(id_owner)
             if owner:
                 text = f'{text}Belongs to {owner.name if not owner.nick else owner.nick}'
-                embed.set_footer(icon_url=owner.avatar.url, text=text)
+                if owner.avatar:
+                    embed.set_footer(icon_url=owner.avatar.url, text=text)
+                else:
+                    embed.set_footer(text=text)
         else:
             embed.set_footer(text=text)
 
@@ -111,7 +114,10 @@ class Information(commands.Cog):
                     text = f'{current_image} \\ {total_images} \n'
                     if id_owner and owner:
                         text = f'{text}Belongs to {owner.name if not owner.nick else owner.nick}'
-                        embed.set_footer(icon_url=owner.avatar.url, text=text)
+                        if owner.avatar:
+                            embed.set_footer(icon_url=owner.avatar.url, text=text)
+                        else:
+                            embed.set_footer(text=text)
                     else:
                         embed.set_footer(text=text)
 

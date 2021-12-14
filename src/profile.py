@@ -117,7 +117,8 @@ class Profile(commands.Cog):
                     if old_page != current_page:
                         embed = discord.Embed(title=deck_owner.name if deck_owner.nick is None else deck_owner.nick,
                                               description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_thumbnail(url=deck_owner.avatar.url)
+                        if deck_owner.avatar:
+                            embed.set_thumbnail(url=deck_owner.avatar.url)
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
 

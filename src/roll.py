@@ -53,8 +53,11 @@ class Roll(commands.Cog):
 
             # Could be None if the user left the server
             if owner:
-                embed.set_footer(icon_url=owner.avatar.url,
-                                 text=f'Belongs to {owner.name if not owner.nick else owner.nick}')
+                text = f'Belongs to {owner.name if not owner.nick else owner.nick}'
+                if owner.avatar:
+                    embed.set_footer(icon_url=owner.avatar.url, text=text)
+                else:
+                    embed.set_footer(text=text)
 
         # Mention users if they wish for this personality
         id_members = DatabaseDeck.get().get_wished_by(ctx.guild.id, id_perso)
@@ -100,7 +103,10 @@ class Roll(commands.Cog):
                     DatabaseDeck.get().add_to_deck(ctx.guild.id, perso['id'], user.id)
                     await ctx.send(f'{username} claims {perso["name"]}!')
 
-                    embed.set_footer(icon_url=user.avatar.url, text=f'Belongs to {username}')
+                    if user.avatar:
+                        embed.set_footer(icon_url=user.avatar.url, text=f'Belongs to {username}')
+                    else:
+                        embed.set_footer(text=f'Belongs to {username}')
                     await msg.edit(embed=embed)
                 else:
                     time = divmod(time_until_claim, 60)
