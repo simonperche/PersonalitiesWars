@@ -27,6 +27,22 @@ class DatabasePersonality:
             self.db.close()
         self.db = sqlite3.connect(filename)
 
+    def get_all_personalities(self):
+        """Return all personalities with [0] = name and [1] = group."""
+        c = self.db.cursor()
+        c.execute(f'''SELECT P.name, G.name
+                             FROM Personality AS P
+                             JOIN PersoGroups AS PG ON PG.id_perso = P.id
+                             JOIN Groups AS G ON PG.id_groups = G.id''')
+        personalities = c.fetchall()
+        c.close()
+
+        if not personalities:
+            return None
+
+        return [{'name': perso[0], 'group': perso[1]} for perso in personalities]
+
+
     def get_perso_ids_containing_name(self, name):
         c = self.db.cursor()
         c.execute('''SELECT P.id FROM Personality AS P WHERE P.name LIKE ? COLLATE NOCASE''', (f'%{name}%',))

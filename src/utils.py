@@ -1,3 +1,17 @@
+import discord
+
+from database import DatabasePersonality
+
+
 # Set authorized guilds for slash command (return [] for global command - might take up to 1h to register)
 def get_authorized_guild_ids():
     return [550631040826343427]
+
+
+async def personalities_name_searcher(ctx: discord.AutocompleteContext):
+    return [perso['name'] for perso in DatabasePersonality.get().get_all_personalities()
+            if ctx.value.lower() in perso['name'].lower()]
+
+
+async def personalities_group_searcher(ctx: discord.AutocompleteContext):
+    return [group for group in DatabasePersonality.get().get_all_groups() if ctx.value.lower() in group.lower()]

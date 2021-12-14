@@ -5,7 +5,7 @@ import datetime
 
 import discord
 from discord.ext import commands
-from discord.commands import slash_command
+from discord.commands import slash_command, Option
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -27,7 +27,8 @@ class Information(commands.Cog):
 
     @slash_command(description='Show information about a personality.',
                    guild_ids=utils.get_authorized_guild_ids())
-    async def information(self, ctx, name: str, group: str = None):
+    async def information(self, ctx, name: Option(str, "Pick a name or write yours", autocomplete=utils.personalities_name_searcher),
+                          group: Option(str, "Pick a group or write yours", autocomplete=utils.personalities_group_searcher, required=False, default=None)):
         name = name.strip()
 
         if group:
@@ -183,7 +184,7 @@ class Information(commands.Cog):
 
     @slash_command(description='Show all members of a group',
                    guild_ids=utils.get_authorized_guild_ids())
-    async def group(self, ctx, group_name: str):
+    async def group(self, ctx, group_name: Option(str, "Pick a group or write yours", autocomplete=utils.personalities_group_searcher)):
         group = DatabasePersonality.get().get_group_members(group_name)
 
         if not group:
