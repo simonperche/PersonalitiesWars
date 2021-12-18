@@ -4,7 +4,6 @@ from datetime import datetime
 
 import discord
 from discord.ext import commands
-from discord.commands import slash_command
 
 from database import DatabasePersonality, DatabaseDeck
 import utils
@@ -17,13 +16,11 @@ class Roll(commands.Cog):
 
     #### Commands ####
 
-    @slash_command(description='Roll a random idom and get the possibility to claim it.',
-                   guild_ids=utils.get_authorized_guild_ids())
+    @commands.command(description='Roll a random idom and get the possibility to claim it.')
     async def roll(self, ctx):
         minutes = min_until_next_roll(ctx.guild.id, ctx.author.id)
         if minutes != 0:
-            await ctx.respond(f'You cannot roll right now. The next roll reset is in {minutes} minutes.',
-                              ephemeral=True)
+            await ctx.send(f'You cannot roll right now. The next roll reset is in {minutes} minutes.')
             return
 
         perso = None
@@ -73,8 +70,7 @@ class Roll(commands.Cog):
         if wish_msg:
             msg_embed += f'Wished by {wish_msg}'
 
-        await ctx.respond(msg_embed, embed=embed)
-        msg = await ctx.interaction.original_message()
+        msg = await ctx.send(msg_embed, embed=embed)
 
         # Cannot claim if perso already claim
         if id_owner:

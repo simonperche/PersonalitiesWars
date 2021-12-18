@@ -18,7 +18,7 @@ intents.members = True
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-bot = discord.Bot(intents=intents)
+bot = commands.Bot(command_prefix='*', intents=intents)
 
 bot.add_cog(Roll(bot))
 bot.add_cog(Admin(bot))
