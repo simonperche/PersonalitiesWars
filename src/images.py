@@ -12,7 +12,7 @@ class Images(commands.Cog):
 
     #### Commands ####
 
-    @slash_command(description='Add a custom image to a personality."',
+    @slash_command(description='Add a custom image to a personality.',
                    guild_ids=utils.get_authorized_guild_ids())
     async def add_image(self, ctx, name: Option(str, "Pick a name or write yours", autocomplete=utils.personalities_name_searcher),
                         url: str):
