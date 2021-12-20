@@ -5,6 +5,7 @@ These classes provide functions to access to data in personalities and member da
 """
 
 import sqlite3
+from collections import defaultdict
 
 
 class DatabasePersonality:
@@ -633,6 +634,21 @@ class DatabaseDeck:
         badges = []
         for badge in res:
             badges.append({'id': badge[0], 'name': badge[1]})
+
+        return badges
+
+    def get_all_badges_with_perso(self, id_server):
+        c = self.db.cursor()
+        c.execute('''SELECT B.name, BP.id_perso
+                     FROM Badge as B
+                     JOIN BadgePerso as BP ON BP.id_badge = B.id
+                     WHERE B.id_server = ?''', (id_server,))
+        res = c.fetchall()
+        c.close()
+
+        badges = defaultdict(list)
+        for badge in res:
+            badges[badge[0]].append(badge[1])
 
         return badges
 
