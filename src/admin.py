@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord.ext.commands import has_permissions
 from discord.commands import slash_command, permissions, Option
 
 from database import DatabaseDeck

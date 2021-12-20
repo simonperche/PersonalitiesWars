@@ -43,3 +43,18 @@ FOREIGN KEY (id_server) REFERENCES Server(id),
 FOREIGN KEY (id_member) REFERENCES Member(id),
 PRIMARY KEY (id_server, id_perso, id_member)
 )
+
+CREATE TABLE Badge (
+id INTEGER PRIMARY KEY,
+name TEXT,
+id_server INT,
+FOREIGN KEY (id_server) REFERENCES Server(id),
+UNIQUE(id_server, name)
+)
+
+CREATE TABLE BadgePerso (
+id_badge INT,
+id_perso INT,
+FOREIGN KEY (id_badge) REFERENCES Badge(id),
+PRIMARY KEY (id_badge, id_perso)
+)

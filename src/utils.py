@@ -29,3 +29,8 @@ async def deck_name_searcher(ctx: discord.AutocompleteContext):
     personalities = DatabasePersonality.get().get_multiple_perso_information(ids)
     return [perso['name'] for perso in personalities
             if ctx.value.lower() in perso['name'].lower()]
+
+
+async def badges_name_searcher(ctx: discord.AutocompleteContext):
+    badges = DatabaseDeck.get().get_all_badges(ctx.interaction.guild.id)
+    return [badge['name'] for badge in badges if ctx.value.lower() in badge['name'].lower()]
