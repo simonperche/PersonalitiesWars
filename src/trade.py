@@ -52,7 +52,7 @@ class Trade(commands.Cog):
 
         accept_view = utils.ConfirmView(ctx.author)
         msg = await ctx.send(f'{user.mention} trades **{name_receive}** for **{name}**.\n'
-                             f'{ctx.author.mention}, do you accept? (y|yes or n|no)\n', view=accept_view)
+                             f'{ctx.author.mention}, do you accept?', view=accept_view)
         await accept_view.wait()
 
         # Timeout
@@ -83,8 +83,7 @@ class Trade(commands.Cog):
             return
 
         accept_view = utils.ConfirmView(user)
-        msg = await ctx.send(f'{user.mention}, {ctx.author.mention} wants to give you **{name}**.\n'
-                             f'Type y|yes or n|no.', view=accept_view)
+        msg = await ctx.send(f'{user.mention}, {ctx.author.mention} wants to give you **{name}**.', view=accept_view)
         await accept_view.wait()
 
         # Timeout
@@ -112,7 +111,7 @@ class Trade(commands.Cog):
             return
 
         accept_view = utils.ConfirmView(ctx.author)
-        msg = await ctx.send(f'{ctx.author.mention}, are you sure you want to discard **{name}**? (y|yes or n|no)\n',
+        msg = await ctx.send(f'{ctx.author.mention}, are you sure you want to discard **{name}**?',
                              view=accept_view)
         await accept_view.wait()
 
