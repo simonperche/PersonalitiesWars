@@ -311,11 +311,9 @@ class Information(commands.Cog):
     @slash_command(description='Show last claims of the last 24h of the current channel.',
                    guild_ids=utils.get_authorized_guild_ids())
     async def last_claims(self, ctx):
-        await ctx.respond('Searching...')
-        msg = await ctx.interaction.original_message()
-        async with ctx.typing():
-            embed = await self.last_claims_function(ctx.channel)
-        await msg.edit(content='', embed=embed)
+        await ctx.defer()
+        embed = await self.last_claims_function(ctx.channel)
+        await ctx.respond(content='', embed=embed)
 
     async def send_last_claims_on_servers(self):
         servers = DatabaseDeck.get().get_servers_with_info_and_claims_channels()
