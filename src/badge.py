@@ -19,8 +19,8 @@ class Badge(commands.Cog):
     @slash_command(description='Add a badge.',
                    guild_ids=utils.get_authorized_guild_ids())
     @permissions.has_role("PersonalitiesWarsAdmin")
-    async def add_badge(self, ctx, name: str):
-        added = DatabaseDeck.get().add_badge(ctx.interaction.guild.id, name)
+    async def add_badge(self, ctx, name: str, description: str = ''):
+        added = DatabaseDeck.get().add_badge(ctx.interaction.guild.id, name, description)
         if not added:
             await ctx.respond('Error : the badge probably already exists.')
             msg = await ctx.interaction.original_message()
@@ -29,6 +29,20 @@ class Badge(commands.Cog):
             await ctx.respond(f'New badge {name} added!')
             msg = await ctx.interaction.original_message()
             await msg.add_reaction(u"\u2705")
+
+    @slash_command(description='Set the description of a badge',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def set_badge_description(self, ctx, name: Option(str, 'Pick a badge name', autocomplete=utils.badges_name_searcher), description: str):
+        id_badge = DatabaseDeck.get().get_id_badge(ctx.interaction.guild.id, name)
+        if not id_badge:
+            await ctx.respond(f'Badge {name} not found.')
+            return
+
+        DatabaseDeck.get().set_badge_description(id_badge, description)
+        await ctx.respond(f'Change description of {name} badge to "{description}".')
+        msg = await ctx.interaction.original_message()
+        await msg.add_reaction(u"\u2705")
 
     @slash_command(description='Remove a badge.',
                    guild_ids=utils.get_authorized_guild_ids())
@@ -138,6 +152,8 @@ class Badge(commands.Cog):
             await ctx.respond(f'Badge {badge_name} not found.')
             return
 
+        badge = DatabaseDeck.get().get_badge_information(id_badge)
+
         ids = DatabaseDeck.get().get_perso_in_badge(id_badge)
 
         persos_text = []
@@ -153,16 +169,29 @@ class Badge(commands.Cog):
                 persos_text.append(f'**{perso["name"]}** *{perso["group"]}* {owner_txt}')
 
         persos_text.sort()
+        if not persos_text:
+            persos_text = ['This badge has no personality yet...']
+
+        id_owner = self.badge_belongs_to(ctx.guild.id, ids)
 
         current_page = 1
         nb_per_page = 20
         max_page = math.ceil(len(persos_text) / float(nb_per_page))
 
-        title = f'Badge {badge_name}'
-        embed = discord.Embed(title=title,
-                              description='\n'.join([perso for perso in persos_text[(
+        title = f'Badge {badge["name"]}'
+        embed = discord.Embed(title=title, description=badge['description'])
+        embed.add_field(name='Personalities', value='\n'.join([perso for perso in persos_text[(
                                                                                                 current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        embed.set_footer(text=f'{current_page} \\ {max_page}')
+        footer = f'{current_page} \\ {max_page}'
+        if id_owner:
+            owner = ctx.guild.get_member(id_owner)
+            footer = f'{footer}\nBelongs to {owner.name if not owner.nick else owner.nick}'
+            if owner.avatar:
+                embed.set_footer(icon_url=owner.avatar.url, text=footer)
+            else:
+                embed.set_footer(text=footer)
+        else:
+            embed.set_footer(text=footer)
         await ctx.respond(embed=embed)
         msg = await ctx.interaction.original_message()
 
@@ -199,10 +228,18 @@ class Badge(commands.Cog):
 
                     # Refresh embed message with the new text
                     if old_page != current_page:
-                        embed = discord.Embed(title=title,
-                                              description='\n'.join([perso for perso in persos_text[(
-                                                                                                                current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_footer(text=f'{current_page} \\ {max_page}')
+                        embed = discord.Embed(title=title, description=badge['description'])
+                        embed.add_field(name='Personalities', value='\n'.join([perso for perso in persos_text[(
+                                                                                                                      current_page - 1) * nb_per_page:current_page * nb_per_page]]))
+                        footer = f'{current_page} \\ {max_page}'
+                        if id_owner and owner:
+                            footer = f'{footer}\nBelongs to {owner.name if not owner.nick else owner.nick}'
+                            if owner.avatar:
+                                embed.set_footer(icon_url=owner.avatar.url, text=footer)
+                            else:
+                                embed.set_footer(text=footer)
+                        else:
+                            embed.set_footer(text=footer)
                         await msg.edit(embed=embed)
 
     @slash_command(description='Show all personalities in this badge',
@@ -334,3 +371,16 @@ class Badge(commands.Cog):
                                               description='\n'.join([badge for badge in badges_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
+
+    def badge_belongs_to(self, id_server, ids_persos_badge):
+        id_members = DatabaseDeck.get().get_all_member(id_server)
+
+        for id_member in id_members:
+            ids_deck = DatabaseDeck.get().get_user_deck(id_server, id_member)
+
+            count = sum([id_perso in ids_deck for id_perso in ids_persos_badge])
+            nb_perso = len(ids_persos_badge)
+            if 0 < nb_perso == count:
+                return id_member
+
+        return None

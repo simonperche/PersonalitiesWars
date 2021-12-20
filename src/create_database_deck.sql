@@ -47,6 +47,7 @@ PRIMARY KEY (id_server, id_perso, id_member)
 CREATE TABLE Badge (
 id INTEGER PRIMARY KEY,
 name TEXT,
+description TEXT DEFAULT '',
 id_server INT,
 FOREIGN KEY (id_server) REFERENCES Server(id),
 UNIQUE(id_server, name)
