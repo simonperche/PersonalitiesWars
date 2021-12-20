@@ -4,7 +4,7 @@ import math
 import datetime
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, pages
 from discord.commands import slash_command, Option
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -25,7 +25,7 @@ class Information(commands.Cog):
 
     #### Commands ####
 
-    @slash_command(description='Show information about a personality.',
+    @slash_command(description='Show information about a personality',
                    guild_ids=utils.get_authorized_guild_ids())
     async def information(self, ctx, name: Option(str, "Pick a name or write yours", autocomplete=utils.personalities_name_searcher),
                           group: Option(str, "Pick a group or write yours", autocomplete=utils.personalities_group_searcher, required=False, default=None)):
@@ -146,53 +146,16 @@ class Information(commands.Cog):
 
         persos_text.sort()
 
-        current_page = 1
         nb_per_page = 20
-        max_page = math.ceil(len(persos_text) / float(nb_per_page))
+        persos_pages = []
 
-        embed = discord.Embed(title=f'*{name}* personality',
-                              description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        embed.set_footer(text=f'{current_page} \\ {max_page}')
-        await ctx.respond(embed=embed)
-        msg = await ctx.interaction.original_message()
+        for i in range(0, len(persos_text), nb_per_page):
+            embed = discord.Embed(title=f'*{name}* personality',
+                                  description='\n'.join([perso for perso in persos_text[i:i + nb_per_page]]))
+            persos_pages.append(embed)
 
-        if max_page > 1:
-            # Page handler
-            left_emoji = '\U00002B05'
-            right_emoji = '\U000027A1'
-            await msg.add_reaction(left_emoji)
-            await msg.add_reaction(right_emoji)
-
-            def check(reaction, user):
-                return user != self.bot.user and (
-                            str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
-                       and reaction.message.id == msg.id
-
-            timeout = False
-
-            while not timeout:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
-                except asyncio.TimeoutError:
-                    await msg.clear_reaction(left_emoji)
-                    await msg.clear_reaction(right_emoji)
-                    timeout = True
-                else:
-                    old_page = current_page
-                    if reaction.emoji == left_emoji:
-                        current_page = current_page - 1 if current_page > 1 else max_page
-
-                    if reaction.emoji == right_emoji:
-                        current_page = current_page + 1 if current_page < max_page else 1
-
-                    await msg.remove_reaction(reaction.emoji, user)
-
-                    # Refresh embed message with the new text
-                    if old_page != current_page:
-                        embed = discord.Embed(title=f'*{name}* personality',
-                                              description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_footer(text=f'{current_page} \\ {max_page}')
-                        await msg.edit(embed=embed)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        await paginator.send(ctx)
 
     @slash_command(description='Show all members of a group',
                    guild_ids=utils.get_authorized_guild_ids())
@@ -203,53 +166,16 @@ class Information(commands.Cog):
             await ctx.respond(f'No *{group_name}* group found.')
             return
 
-        current_page = 1
         nb_per_page = 20
-        max_page = math.ceil(len(group['members']) / float(nb_per_page))
+        persos_pages = []
 
-        embed = discord.Embed(title=f'*{group["name"]}* group',
-                              description='\n'.join([f'**{member}**' for member in group['members'][(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        embed.set_footer(text=f'{current_page} \\ {max_page}')
+        for i in range(0, len(group['members']), nb_per_page):
+            embed = discord.Embed(title=f'*{group["name"]}* group',
+                                  description='\n'.join([f'**{member}**' for member in group['members'][i:i+nb_per_page]]))
+            persos_pages.append(embed)
 
-        await ctx.respond(embed=embed)
-        msg = await ctx.interaction.original_message()
-
-        if max_page > 1:
-            # Page handler
-            left_emoji = '\U00002B05'
-            right_emoji = '\U000027A1'
-            await msg.add_reaction(left_emoji)
-            await msg.add_reaction(right_emoji)
-
-            def check(reaction, user):
-                return user != self.bot.user and (str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
-                       and reaction.message.id == msg.id
-
-            timeout = False
-
-            while not timeout:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
-                except asyncio.TimeoutError:
-                    await msg.clear_reaction(left_emoji)
-                    await msg.clear_reaction(right_emoji)
-                    timeout = True
-                else:
-                    old_page = current_page
-                    if reaction.emoji == left_emoji:
-                        current_page = current_page - 1 if current_page > 1 else max_page
-
-                    if reaction.emoji == right_emoji:
-                        current_page = current_page + 1 if current_page < max_page else 1
-
-                    await msg.remove_reaction(reaction.emoji, user)
-
-                    # Refresh embed message with the new text
-                    if old_page != current_page:
-                        embed = discord.Embed(title=f'*{group["name"]}* group',
-                                              description='\n'.join([f'**{member}**' for member in group['members'][(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_footer(text=f'{current_page} \\ {max_page}')
-                        await msg.edit(embed=embed)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        await paginator.send(ctx)
 
     @slash_command(description='Show all groups available',
                    guild_ids=utils.get_authorized_guild_ids())
@@ -260,53 +186,16 @@ class Information(commands.Cog):
             await ctx.respond(f'No group found. This is probably an error.')
             return
 
-        current_page = 1
         nb_per_page = 20
-        max_page = math.ceil(len(groups)/float(nb_per_page))
+        persos_pages = []
 
-        embed = discord.Embed(title=f'All groups',
-                              description='\n'.join([f'**{group}**' for group in groups[(current_page-1)*nb_per_page:current_page*nb_per_page]]))
-        embed.set_footer(text=f'{current_page} \\ {max_page}')
+        for i in range(0, len(groups), nb_per_page):
+            embed = discord.Embed(title=f'All groups',
+                                  description='\n'.join([f'**{group}**' for group in groups[i:i+nb_per_page]]))
+            persos_pages.append(embed)
 
-        await ctx.respond(embed=embed)
-        msg = await ctx.interaction.original_message()
-
-        if max_page > 1:
-            # Page handler
-            left_emoji = '\U00002B05'
-            right_emoji = '\U000027A1'
-            await msg.add_reaction(left_emoji)
-            await msg.add_reaction(right_emoji)
-
-            def check(reaction, user):
-                return user != self.bot.user and (str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
-                       and reaction.message.id == msg.id
-
-            timeout = False
-
-            while not timeout:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=10, check=check)
-                except asyncio.TimeoutError:
-                    await msg.clear_reaction(left_emoji)
-                    await msg.clear_reaction(right_emoji)
-                    timeout = True
-                else:
-                    old_page = current_page
-                    if reaction.emoji == left_emoji:
-                        current_page = current_page - 1 if current_page > 1 else max_page
-
-                    if reaction.emoji == right_emoji:
-                        current_page = current_page + 1 if current_page < max_page else 1
-
-                    await msg.remove_reaction(reaction.emoji, user)
-
-                    # Refresh embed message with the new text
-                    if old_page != current_page:
-                        embed = discord.Embed(title=f'All groups',
-                                              description='\n'.join([f'**{group}**' for group in groups[(current_page-1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_footer(text=f'{current_page} \\ {max_page}')
-                        await msg.edit(embed=embed)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        await paginator.send(ctx)
 
     @slash_command(description='Show last claims of the last 24h of the current channel.',
                    guild_ids=utils.get_authorized_guild_ids())
