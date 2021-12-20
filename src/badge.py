@@ -352,7 +352,7 @@ class Badge(commands.Cog):
                     # Refresh embed message with the new text
                     if old_page != current_page:
                         embed = discord.Embed(title=title,
-                                              description='\n'.join([perso for perso in persos_text[(
+                                              description='\n'.join([badge for badge in badges_text[(
                                                                                                             current_page - 1) * nb_per_page:current_page * nb_per_page]]))
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
                         await msg.edit(embed=embed)
