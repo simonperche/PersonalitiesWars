@@ -73,6 +73,11 @@ class Information(commands.Cog):
 
         embed.set_image(url=perso['image'])
 
+        badges_with_perso = DatabaseDeck.get().get_badges_with(ctx.guild.id, id_perso)
+        if badges_with_perso:
+            embed.add_field(name=f'Badge{"s" if len(badges_with_perso) > 1 else ""}',
+                            value='\n'.join([badge['name'] for badge in badges_with_perso]))
+
         await ctx.respond(embed=embed)
         msg = await ctx.interaction.original_message()
 
@@ -111,6 +116,7 @@ class Information(commands.Cog):
                     image_number = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
                     perso = DatabasePersonality.get().get_perso_information(id_perso, image_number)
                     embed.set_image(url=perso['image'])
+                    
                     text = f'{current_image} \\ {total_images} \n'
                     if id_owner and owner:
                         text = f'{text}Belongs to {owner.name if not owner.nick else owner.nick}'
