@@ -693,7 +693,7 @@ class DatabaseDeck:
 
         return badges
 
-    def get_perso_in_badges(self, id_badge):
+    def get_perso_in_badge(self, id_badge):
         c = self.db.cursor()
         c.execute('''SELECT id_perso
                      FROM BadgePerso

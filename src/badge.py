@@ -77,7 +77,7 @@ class Badge(commands.Cog):
             await ctx.respond(msg)
             return
 
-        if id_perso in DatabaseDeck.get().get_perso_in_badges(id_badge):
+        if id_perso in DatabaseDeck.get().get_perso_in_badge(id_badge):
             await ctx.respond(f'Personnality {personality} is already in {badge_name}.')
             return
 
@@ -120,7 +120,7 @@ class Badge(commands.Cog):
             await ctx.respond(msg)
             return
 
-        if id_perso not in DatabaseDeck.get().get_perso_in_badges(id_badge):
+        if id_perso not in DatabaseDeck.get().get_perso_in_badge(id_badge):
             await ctx.respond(f'Personnality {personality} is not in {badge_name}.')
             return
 
@@ -138,7 +138,7 @@ class Badge(commands.Cog):
             await ctx.respond(f'Badge {badge_name} not found.')
             return
 
-        ids = DatabaseDeck.get().get_perso_in_badges(id_badge)
+        ids = DatabaseDeck.get().get_perso_in_badge(id_badge)
 
         persos_text = []
         personalities = DatabasePersonality.get().get_multiple_perso_information(ids)
