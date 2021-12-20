@@ -144,7 +144,13 @@ class Badge(commands.Cog):
         personalities = DatabasePersonality.get().get_multiple_perso_information(ids)
         if personalities:
             for perso in personalities:
-                persos_text.append(f'**{perso["name"]}** *{perso["group"]}*')
+                id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, perso['id'])
+                owner_txt = ''
+                if id_owner:
+                    owner = ctx.guild.get_member(id_owner)
+                    if owner:
+                        owner_txt = f' - {owner.name if not owner.nick else owner.nick}'
+                persos_text.append(f'**{perso["name"]}** *{perso["group"]}* {owner_txt}')
 
         persos_text.sort()
 
