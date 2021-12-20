@@ -47,10 +47,19 @@ class Profile(commands.Cog):
         # Keep only the 10 most popular groups
         groups = sorted(groups_count.items(), key=lambda item: item[1], reverse=True)[:10]
 
-        embed = discord.Embed(
-            title=f'Profile of {profile_owner.name if profile_owner.nick is None else profile_owner.nick}', type='rich')
+        # Badges
+        owned_badges = []
+        badges = DatabaseDeck.get().get_all_badges_with_perso(ctx.guild.id)
+        for badge_name in badges:
+            if all(id_perso in ids_deck for id_perso in badges[badge_name]):
+                owned_badges.append(badge_name)
+        badges_embed_msg = 'You don\'t own any badge...'
+        if owned_badges:
+            badges_embed_msg = '\n'.join(owned_badges)
+
+        embed = discord.Embed(title=f'Profile of {profile_owner.name if profile_owner.nick is None else profile_owner.nick}', type='rich')
         embed.description = f'You own {len(ids_deck)} personalit{"ies" if len(ids_deck) > 1 else "y"}!'
-        embed.add_field(name='Badges', value='WIP...')
+        embed.add_field(name='Badges', value=badges_embed_msg)
         if groups:
             embed.add_field(name='Most owned groups',
                             value='\n'.join([f'*{group[0].capitalize()}* ({group[1]})' for group in groups]))

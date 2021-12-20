@@ -11,6 +11,7 @@ from information import Information
 from wishlist import Wishlist
 from trade import Trade
 from images import Images
+from badge import Badge
 import utils
 
 intents = discord.Intents.default()
@@ -27,6 +28,7 @@ bot.add_cog(Information(bot))
 bot.add_cog(Wishlist(bot))
 bot.add_cog(Trade(bot))
 bot.add_cog(Images(bot))
+bot.add_cog(Badge(bot))
 
 
 #### Bot commands ####

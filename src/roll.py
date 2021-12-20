@@ -6,7 +6,6 @@ import discord
 from discord.ext import commands
 
 from database import DatabasePersonality, DatabaseDeck
-import utils
 
 
 class Roll(commands.Cog):
@@ -40,7 +39,13 @@ class Roll(commands.Cog):
 
         max_rolls = DatabaseDeck.get().get_rolls_per_hour(ctx.guild.id)
         if max_rolls - user_nb_rolls - 1 == 2:
-            msg_embed += f'**{ctx.author.name if ctx.author.nick is None else ctx.author.nick}**, 2 uses left.\n'
+            msg_embed += f'{ctx.author.name if ctx.author.nick is None else ctx.author.nick}, 2 uses left.\n'
+
+        # Get badges information
+        badges_with_perso = DatabaseDeck.get().get_badges_with(ctx.guild.id, id_perso)
+        if badges_with_perso:
+            msg_embed += f'**Required for {",".join([badge["name"] for badge in badges_with_perso])}' \
+                         f' badge{"" if len(badges_with_perso) == 1 else "s"}!**\n'
 
         embed = discord.Embed(title=perso['name'], description=perso['group'], colour=secrets.randbelow(0xffffff))
         embed.set_image(url=perso['image'])
@@ -105,6 +110,19 @@ class Roll(commands.Cog):
                     else:
                         embed.set_footer(text=f'Belongs to {username}')
                     await msg.edit(embed=embed)
+
+                    if badges_with_perso:
+                        ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, user.id)
+                        msg_badges_progression = ''
+                        for badge in badges_with_perso:
+                            perso_in_badge = DatabaseDeck.get().get_perso_in_badge(badge['id'])
+                            count = sum([id_perso in ids_deck for id_perso in perso_in_badge])
+                            nb_perso = len(perso_in_badge)
+                            if perso['id'] in perso_in_badge and count == nb_perso:
+                                await ctx.send(f'**{user.mention}, you have just unlocked {badge["name"]} badge!**')
+                            msg_badges_progression += f'{badge["name"]} {count}/{nb_perso}\n'
+                        badge_embed = discord.Embed(title=f'Badges progression with {perso["name"]}', description=msg_badges_progression)
+                        await ctx.send(embed=badge_embed)
                 else:
                     time = divmod(time_until_claim, 60)
                     await ctx.send(f'{username}, you can\'t claim right now. ' +

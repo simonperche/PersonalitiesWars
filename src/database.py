@@ -5,6 +5,7 @@ These classes provide functions to access to data in personalities and member da
 """
 
 import sqlite3
+from collections import defaultdict
 
 
 class DatabasePersonality:
@@ -41,7 +42,6 @@ class DatabasePersonality:
             return None
 
         return [{'name': perso[0], 'group': perso[1]} for perso in personalities]
-
 
     def get_perso_ids_containing_name(self, name):
         c = self.db.cursor()
@@ -351,6 +351,16 @@ class DatabaseDeck:
         self.db.commit()
         c.close()
 
+    def get_all_member(self, id_server):
+        """Return a list of member."""
+        c = self.db.cursor()
+        c.execute('''SELECT id_member
+                     FROM MemberInformation
+                     WHERE id_server = ?''', (id_server,))
+        ids = c.fetchall()
+        c.close()
+        return [id_member[0] for id_member in ids]
+
     def get_user_deck(self, id_server, id_member):
         """Return a list of personality ids."""
         c = self.db.cursor()
@@ -602,3 +612,130 @@ class DatabaseDeck:
         c.close()
 
         return current_image[0]
+
+    def add_badge(self, id_server, name, description=''):
+        """Add a new badge to the server and return if the operation was successful"""
+        try:
+            c = self.db.cursor()
+            c.execute(''' INSERT INTO Badge(id_server, name, description) 
+                          VALUES (?, ?, ?) ''', (id_server, name, description,))
+            self.db.commit()
+            c.close()
+        except sqlite3.IntegrityError as e:
+            return False
+
+        return True
+
+    def remove_badge(self, id_badge):
+        c = self.db.cursor()
+        c.execute(''' DELETE FROM BadgePerso WHERE id_badge = ? ''', (id_badge,))
+        c.execute(''' DELETE FROM Badge WHERE id = ? ''', (id_badge,))
+        self.db.commit()
+        c.close()
+
+    def set_badge_description(self, id_badge, description):
+        c = self.db.cursor()
+        c.execute(''' UPDATE Badge SET description = ? WHERE id = ? ''', (description, id_badge,))
+        self.db.commit()
+        c.close()
+
+    def set_badge_name(self, id_badge, new_name):
+        c = self.db.cursor()
+        c.execute(''' UPDATE Badge SET name = ? WHERE id = ? ''', (new_name, id_badge,))
+        self.db.commit()
+        c.close()
+
+    def get_all_badges(self, id_server):
+        c = self.db.cursor()
+        c.execute('''SELECT id, name, description
+                     FROM Badge
+                     WHERE id_server = ?''', (id_server,))
+        res = c.fetchall()
+        c.close()
+
+        badges = []
+        for badge in res:
+            badges.append({'id': badge[0], 'name': badge[1], 'description': badge[2]})
+
+        return badges
+
+    def get_all_badges_with_perso(self, id_server):
+        c = self.db.cursor()
+        c.execute('''SELECT B.name, BP.id_perso
+                     FROM Badge as B
+                     JOIN BadgePerso as BP ON BP.id_badge = B.id
+                     WHERE B.id_server = ?''', (id_server,))
+        res = c.fetchall()
+        c.close()
+
+        badges = defaultdict(list)
+        for badge in res:
+            badges[badge[0]].append(badge[1])
+
+        return badges
+
+    def get_id_badge(self, id_server, name):
+        c = self.db.cursor()
+        c.execute('''SELECT id
+                     FROM Badge
+                     WHERE id_server = ? AND name = ?''', (id_server, name,))
+        badge = c.fetchone()
+        c.close()
+
+        if not badge:
+            return None
+
+        return badge[0]
+
+    def get_badge_information(self, id_badge):
+        c = self.db.cursor()
+        c.execute('''SELECT name, description
+                     FROM Badge
+                     WHERE id = ?''', (id_badge,))
+        badge = c.fetchone()
+        c.close()
+
+        if not badge:
+            return None
+
+        badge = {'name': badge[0], 'description': badge[1]}
+
+        return badge
+
+    def add_perso_to_badge(self, id_badge, id_perso):
+        c = self.db.cursor()
+        c.execute(''' INSERT OR IGNORE INTO BadgePerso(id_badge, id_perso) 
+                              VALUES (?, ?) ''', (id_badge, id_perso,))
+        self.db.commit()
+        c.close()
+
+    def remove_perso_from_badge(self, id_badge, id_perso):
+        c = self.db.cursor()
+        c.execute(''' DELETE FROM BadgePerso WHERE id_badge = ? AND id_perso = ? ''', (id_badge, id_perso,))
+        self.db.commit()
+        c.close()
+
+    def get_badges_with(self, id_server, id_perso):
+        c = self.db.cursor()
+        c.execute('''SELECT B.id, B.name, B.description
+                     FROM Badge as B
+                     JOIN BadgePerso as BP ON BP.id_badge = B.id
+                     WHERE B.id_server = ? AND BP.id_perso = ?''', (id_server, id_perso,))
+        res = c.fetchall()
+        c.close()
+
+        badges = []
+        for badge in res:
+            badges.append({'id': badge[0], 'name': badge[1], 'description': badge[2]})
+
+        return badges
+
+    def get_perso_in_badge(self, id_badge):
+        c = self.db.cursor()
+        c.execute('''SELECT id_perso
+                     FROM BadgePerso
+                     WHERE id_badge = ?''', (id_badge,))
+        id_persos = c.fetchall()
+        c.close()
+
+        return [id_perso[0] for id_perso in id_persos]
