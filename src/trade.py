@@ -50,28 +50,26 @@ class Trade(commands.Cog):
         if not id_perso_receive:
             return
 
-        def check(message):
-            return message.author == ctx.author and \
-                   (message.content.lower() == 'yes' or message.content.lower() == 'y' or
-                    message.content.lower() == 'no' or message.content.lower() == 'n')
+        accept_view = utils.ConfirmView(ctx.author)
+        msg = await ctx.send(f'{user.mention} trades **{name_receive}** for **{name}**.\n'
+                             f'{ctx.author.mention}, do you accept? (y|yes or n|no)\n', view=accept_view)
+        await accept_view.wait()
 
-        await ctx.send(f'{user.mention} trades **{name_receive}** for **{name}**.\n'
-                       f'{ctx.author.mention}, do you accept? (y|yes or n|no)\n')
-        try:
-            msg = await self.bot.wait_for('message', timeout=30, check=check)
-        except asyncio.TimeoutError:
+        # Timeout
+        if accept_view.is_accepted is None:
             original_msg = await ctx.interaction.original_message()
             await original_msg.add_reaction(u"\u274C")
             await ctx.send('Too late... Give is cancelled.')
+            await msg.add_reaction(u"\u274C")
+            await msg.edit(view=accept_view)
+        elif accept_view.is_accepted:
+            DatabaseDeck.get().give_to(ctx.guild.id, id_perso_give, ctx.author.id, user.id)
+            DatabaseDeck.get().give_to(ctx.guild.id, id_perso_receive, user.id, ctx.author.id)
+            original_msg = await ctx.interaction.original_message()
+            await original_msg.add_reaction(u"\u2705")
+            await msg.add_reaction(u"\u2705")
         else:
-            if msg.content.lower() == 'y' or msg.content.lower() == 'yes':
-                DatabaseDeck.get().give_to(ctx.guild.id, id_perso_give, ctx.author.id, user.id)
-                DatabaseDeck.get().give_to(ctx.guild.id, id_perso_receive, user.id, ctx.author.id)
-                original_msg = await ctx.interaction.original_message()
-                await original_msg.add_reaction(u"\u2705")
-                await msg.add_reaction(u"\u2705")
-            else:
-                await ctx.send('Trade is cancelled.')
+            await ctx.send('Trade is cancelled.')
 
     @slash_command(description='Give one personality to someone.',
                    guild_ids=utils.get_authorized_guild_ids())
@@ -84,26 +82,24 @@ class Trade(commands.Cog):
         if not id_perso:
             return
 
-        def check(message):
-            return message.author == user and (message.content.lower() == 'yes' or message.content.lower() == 'y' or
-                                               message.content.lower() == 'no' or message.content.lower() == 'n')
+        accept_view = utils.ConfirmView(user)
+        msg = await ctx.send(f'{user.mention}, {ctx.author.mention} wants to give you **{name}**.\n'
+                             f'Type y|yes or n|no.', view=accept_view)
+        await accept_view.wait()
 
-        await ctx.send(f'{user.mention}, {ctx.author.mention} wants to give you **{name}**.\n'
-                       f'Type y|yes or n|no.')
-        try:
-            msg = await self.bot.wait_for('message', timeout=30, check=check)
-        except asyncio.TimeoutError:
+        # Timeout
+        if accept_view.is_accepted is None:
             original_msg = await ctx.interaction.original_message()
             await original_msg.add_reaction(u"\u274C")
             await ctx.send('Too late... Give is cancelled.')
+            await msg.edit(view=accept_view)
+        elif accept_view.is_accepted:
+            DatabaseDeck.get().give_to(ctx.guild.id, id_perso, ctx.author.id, user.id)
+            original_msg = await ctx.interaction.original_message()
+            await original_msg.add_reaction(u"\u2705")
+            await msg.add_reaction(u"\u2705")
         else:
-            if msg.content.lower() == 'y' or msg.content.lower() == 'yes':
-                DatabaseDeck.get().give_to(ctx.guild.id, id_perso, ctx.author.id, user.id)
-                original_msg = await ctx.interaction.original_message()
-                await original_msg.add_reaction(u"\u2705")
-                await msg.add_reaction(u"\u2705")
-            else:
-                await ctx.send('Give is cancelled.')
+            await ctx.send('Give is cancelled.')
 
     @slash_command(description='Remove a personality from your deck (can\'t be undone!).',
                    guild_ids=utils.get_authorized_guild_ids())
@@ -115,27 +111,24 @@ class Trade(commands.Cog):
         if not id_perso:
             return
 
-        def check(message):
-            return message.author == ctx.author \
-                   and message.channel == ctx.interaction.channel \
-                   and (message.content.lower() == 'yes' or message.content.lower() == 'y' or
-                        message.content.lower() == 'no' or message.content.lower() == 'n')
+        accept_view = utils.ConfirmView(ctx.author)
+        msg = await ctx.send(f'{ctx.author.mention}, are you sure you want to discard **{name}**? (y|yes or n|no)\n',
+                             view=accept_view)
+        await accept_view.wait()
 
-        await ctx.send(f'{ctx.author.mention}, are you sure you want to discard **{name}**? (y|yes or n|no)\n')
-        try:
-            msg = await self.bot.wait_for('message', timeout=30, check=check)
-        except asyncio.TimeoutError:
+        # Timeout
+        if accept_view.is_accepted is None:
             original_msg = await ctx.interaction.original_message()
             await original_msg.add_reaction(u"\u274C")
-            await ctx.send('Discard is cancelled.')
+            await ctx.send('Timeout : discard is cancelled.')
+            await msg.edit(view=accept_view)
+        elif accept_view.is_accepted:
+            DatabaseDeck.get().give_to(ctx.guild.id, id_perso, ctx.author.id, None)
+            original_msg = await ctx.interaction.original_message()
+            await original_msg.add_reaction(u"\u2705")
+            await msg.add_reaction(u"\u2705")
         else:
-            if msg.content.lower() == 'y' or msg.content.lower() == 'yes':
-                DatabaseDeck.get().give_to(ctx.guild.id, id_perso, ctx.author.id, None)
-                original_msg = await ctx.interaction.original_message()
-                await original_msg.add_reaction(u"\u2705")
-                await msg.add_reaction(u"\u2705")
-            else:
-                await ctx.send('Discard is cancelled.')
+            await ctx.send('Discard is cancelled.')
 
     @slash_command(description='Remove all personalities from your deck (can\'t be undone!).',
                    guild_ids=utils.get_authorized_guild_ids())
