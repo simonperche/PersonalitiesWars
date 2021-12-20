@@ -6,7 +6,6 @@ import discord
 from discord.ext import commands
 
 from database import DatabasePersonality, DatabaseDeck
-import utils
 
 
 class Roll(commands.Cog):
@@ -40,7 +39,13 @@ class Roll(commands.Cog):
 
         max_rolls = DatabaseDeck.get().get_rolls_per_hour(ctx.guild.id)
         if max_rolls - user_nb_rolls - 1 == 2:
-            msg_embed += f'**{ctx.author.name if ctx.author.nick is None else ctx.author.nick}**, 2 uses left.\n'
+            msg_embed += f'{ctx.author.name if ctx.author.nick is None else ctx.author.nick}, 2 uses left.\n'
+
+        # Get badges information
+        badges_with_perso = DatabaseDeck.get().get_badges_with(ctx.guild.id, id_perso)
+        if badges_with_perso:
+            msg_embed += f'**Required for {",".join([badge["name"] for badge in badges_with_perso])}' \
+                         f' badge{"" if len(badges_with_perso) == 1 else "s"}!**\n'
 
         embed = discord.Embed(title=perso['name'], description=perso['group'], colour=secrets.randbelow(0xffffff))
         embed.set_image(url=perso['image'])

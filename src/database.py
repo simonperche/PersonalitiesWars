@@ -666,7 +666,7 @@ class DatabaseDeck:
         c = self.db.cursor()
         c.execute('''SELECT B.id, B.name
                      FROM Badge as B
-                     JOIN BadgePerso as BP ON BP.id_badge = B.id_badge
+                     JOIN BadgePerso as BP ON BP.id_badge = B.id
                      WHERE B.id_server = ? AND BP.id_perso = ?''', (id_server, id_perso,))
         res = c.fetchall()
         c.close()
