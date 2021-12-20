@@ -2,7 +2,7 @@ import math
 import asyncio
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, pages
 from discord.commands import slash_command, Option, permissions
 
 from database import DatabasePersonality, DatabaseDeck
@@ -219,73 +219,24 @@ class Badge(commands.Cog):
 
         id_owner = self.badge_belongs_to(ctx.guild.id, ids)
 
-        current_page = 1
         nb_per_page = 20
-        max_page = math.ceil(len(persos_text) / float(nb_per_page))
+        persos_pages = []
 
-        title = f'Badge {badge["name"]}'
-        embed = discord.Embed(title=title, description=badge['description'])
-        embed.add_field(name='Personalities', value='\n'.join([perso for perso in persos_text[(
-                                                                                                current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        footer = f'{current_page} \\ {max_page}'
-        if id_owner:
-            owner = ctx.guild.get_member(id_owner)
-            footer = f'{footer}\nBelongs to {owner.name if not owner.nick else owner.nick}'
-            if owner.avatar:
-                embed.set_footer(icon_url=owner.avatar.url, text=footer)
-            else:
-                embed.set_footer(text=footer)
-        else:
-            embed.set_footer(text=footer)
-        await ctx.respond(embed=embed)
-        msg = await ctx.interaction.original_message()
-
-        if max_page > 1:
-            # Page handler
-            left_emoji = '\U00002B05'
-            right_emoji = '\U000027A1'
-            await msg.add_reaction(left_emoji)
-            await msg.add_reaction(right_emoji)
-
-            def check(reaction, user):
-                return user != self.bot.user and (
-                        str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
-                       and reaction.message.id == msg.id
-
-            timeout = False
-
-            while not timeout:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
-                except asyncio.TimeoutError:
-                    await msg.clear_reaction(left_emoji)
-                    await msg.clear_reaction(right_emoji)
-                    timeout = True
+        for i in range(0, len(persos_text), nb_per_page):
+            embed = discord.Embed(title=f'Badge {badge["name"]}', description=badge['description'])
+            embed.add_field(name='Personalities', value='\n'.join([perso for perso in persos_text[i:i + nb_per_page]]))
+            if id_owner:
+                owner = ctx.guild.get_member(id_owner)
+                footer = f'Belongs to {owner.name if not owner.nick else owner.nick}'
+                if owner.avatar:
+                    embed.set_footer(icon_url=owner.avatar.url, text=footer)
                 else:
-                    old_page = current_page
-                    if reaction.emoji == left_emoji:
-                        current_page = current_page - 1 if current_page > 1 else max_page
+                    embed.set_footer(text=footer)
 
-                    if reaction.emoji == right_emoji:
-                        current_page = current_page + 1 if current_page < max_page else 1
+            persos_pages.append(embed)
 
-                    await msg.remove_reaction(reaction.emoji, user)
-
-                    # Refresh embed message with the new text
-                    if old_page != current_page:
-                        embed = discord.Embed(title=title, description=badge['description'])
-                        embed.add_field(name='Personalities', value='\n'.join([perso for perso in persos_text[(
-                                                                                                                      current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        footer = f'{current_page} \\ {max_page}'
-                        if id_owner and owner:
-                            footer = f'{footer}\nBelongs to {owner.name if not owner.nick else owner.nick}'
-                            if owner.avatar:
-                                embed.set_footer(icon_url=owner.avatar.url, text=footer)
-                            else:
-                                embed.set_footer(text=footer)
-                        else:
-                            embed.set_footer(text=footer)
-                        await msg.edit(embed=embed)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        await paginator.send(ctx)
 
     @slash_command(description='Show all personalities in this badge',
                    guild_ids=utils.get_authorized_guild_ids())
@@ -306,56 +257,16 @@ class Badge(commands.Cog):
 
         badges_text.sort()
 
-        current_page = 1
         nb_per_page = 20
-        max_page = math.ceil(len(badges_text) / float(nb_per_page))
+        badges_pages = []
 
-        title = f'Badges progression of {owner.name if not owner.nick else owner.nick}'
-        embed = discord.Embed(title=title,
-                              description='\n'.join([badge for badge in badges_text[(
-                                                                                                current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        embed.set_footer(text=f'{current_page} \\ {max_page}')
-        await ctx.respond(embed=embed)
-        msg = await ctx.interaction.original_message()
+        for i in range(0, len(badges_text), nb_per_page):
+            embed = discord.Embed(title=f'Badges progression of {owner.name if not owner.nick else owner.nick}',
+                                  description='\n'.join([badge for badge in badges_text[i:i+nb_per_page]]))
+            badges_pages.append(embed)
 
-        if max_page > 1:
-            # Page handler
-            left_emoji = '\U00002B05'
-            right_emoji = '\U000027A1'
-            await msg.add_reaction(left_emoji)
-            await msg.add_reaction(right_emoji)
-
-            def check(reaction, user):
-                return user != self.bot.user and (
-                        str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
-                       and reaction.message.id == msg.id
-
-            timeout = False
-
-            while not timeout:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
-                except asyncio.TimeoutError:
-                    await msg.clear_reaction(left_emoji)
-                    await msg.clear_reaction(right_emoji)
-                    timeout = True
-                else:
-                    old_page = current_page
-                    if reaction.emoji == left_emoji:
-                        current_page = current_page - 1 if current_page > 1 else max_page
-
-                    if reaction.emoji == right_emoji:
-                        current_page = current_page + 1 if current_page < max_page else 1
-
-                    await msg.remove_reaction(reaction.emoji, user)
-
-                    # Refresh embed message with the new text
-                    if old_page != current_page:
-                        embed = discord.Embed(title=title,
-                                              description='\n'.join([badge for badge in badges_text[(
-                                                                                                            current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_footer(text=f'{current_page} \\ {max_page}')
-                        await msg.edit(embed=embed)
+        paginator = pages.Paginator(pages=badges_pages, show_disabled=False, show_indicator=True)
+        await paginator.send(ctx)
 
     @slash_command(description='Show all badges',
                    guild_ids=utils.get_authorized_guild_ids())
@@ -368,54 +279,16 @@ class Badge(commands.Cog):
 
         badges_text.sort()
 
-        current_page = 1
         nb_per_page = 20
-        max_page = math.ceil(len(badges_text) / float(nb_per_page))
+        badges_pages = []
 
-        title = f'Badges'
-        embed = discord.Embed(title=title,
-                              description='\n'.join([badge for badge in badges_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-        embed.set_footer(text=f'{current_page} \\ {max_page}')
-        await ctx.respond(embed=embed)
-        msg = await ctx.interaction.original_message()
+        for i in range(0, len(badges_text), nb_per_page):
+            embed = discord.Embed(title=f'Badges',
+                                  description='\n'.join([badge for badge in badges_text[i:i+nb_per_page]]))
+            badges_pages.append(embed)
 
-        if max_page > 1:
-            # Page handler
-            left_emoji = '\U00002B05'
-            right_emoji = '\U000027A1'
-            await msg.add_reaction(left_emoji)
-            await msg.add_reaction(right_emoji)
-
-            def check(reaction, user):
-                return user != self.bot.user and (
-                        str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
-                       and reaction.message.id == msg.id
-
-            timeout = False
-
-            while not timeout:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
-                except asyncio.TimeoutError:
-                    await msg.clear_reaction(left_emoji)
-                    await msg.clear_reaction(right_emoji)
-                    timeout = True
-                else:
-                    old_page = current_page
-                    if reaction.emoji == left_emoji:
-                        current_page = current_page - 1 if current_page > 1 else max_page
-
-                    if reaction.emoji == right_emoji:
-                        current_page = current_page + 1 if current_page < max_page else 1
-
-                    await msg.remove_reaction(reaction.emoji, user)
-
-                    # Refresh embed message with the new text
-                    if old_page != current_page:
-                        embed = discord.Embed(title=title,
-                                              description='\n'.join([badge for badge in badges_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
-                        embed.set_footer(text=f'{current_page} \\ {max_page}')
-                        await msg.edit(embed=embed)
+        paginator = pages.Paginator(pages=badges_pages, show_disabled=False, show_indicator=True)
+        await paginator.send(ctx)
 
     def badge_belongs_to(self, id_server, ids_persos_badge):
         id_members = DatabaseDeck.get().get_all_member(id_server)
