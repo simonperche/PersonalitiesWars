@@ -16,7 +16,7 @@ class Badge(commands.Cog):
 
     #### Commands ####
 
-    @slash_command(description='Add a badge.',
+    @slash_command(description='Add a badge',
                    guild_ids=utils.get_authorized_guild_ids())
     @permissions.has_role("PersonalitiesWarsAdmin")
     async def create_badge(self, ctx, name: str, description: str = ''):
