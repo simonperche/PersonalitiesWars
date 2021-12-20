@@ -11,6 +11,7 @@ from database import DatabaseDeck, DatabasePersonality
 from roll import min_until_next_claim
 import utils
 
+
 class Profile(commands.Cog):
     def __init__(self, bot):
         """Initial the cog with the bot."""
@@ -46,11 +47,13 @@ class Profile(commands.Cog):
         # Keep only the 10 most popular groups
         groups = sorted(groups_count.items(), key=lambda item: item[1], reverse=True)[:10]
 
-        embed = discord.Embed(title=f'Profile of {profile_owner.name if profile_owner.nick is None else profile_owner.nick}', type='rich')
+        embed = discord.Embed(
+            title=f'Profile of {profile_owner.name if profile_owner.nick is None else profile_owner.nick}', type='rich')
         embed.description = f'You own {len(ids_deck)} personalit{"ies" if len(ids_deck) > 1 else "y"}!'
         embed.add_field(name='Badges', value='WIP...')
         if groups:
-            embed.add_field(name='Most owned groups', value='\n'.join([f'*{group[0].capitalize()}* ({group[1]})' for group in groups]))
+            embed.add_field(name='Most owned groups',
+                            value='\n'.join([f'*{group[0].capitalize()}* ({group[1]})' for group in groups]))
         if image:
             embed.set_thumbnail(url=image)
 
@@ -76,7 +79,8 @@ class Profile(commands.Cog):
         max_page = math.ceil(len(persos_text) / float(nb_per_page))
 
         embed = discord.Embed(title=deck_owner.name if deck_owner.nick is None else deck_owner.nick,
-                              description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
+                              description='\n'.join([perso for perso in persos_text[(
+                                                                                                current_page - 1) * nb_per_page:current_page * nb_per_page]]))
         if deck_owner.avatar:
             embed.set_thumbnail(url=deck_owner.avatar.url)
         embed.set_footer(text=f'{current_page} \\ {max_page}')
@@ -91,7 +95,8 @@ class Profile(commands.Cog):
             await msg.add_reaction(right_emoji)
 
             def check(reaction, user):
-                return user != self.bot.user and (str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
+                return user != self.bot.user and (
+                            str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
                        and reaction.message.id == msg.id
 
             timeout = False
@@ -116,7 +121,8 @@ class Profile(commands.Cog):
                     # Refresh embed message with the new text
                     if old_page != current_page:
                         embed = discord.Embed(title=deck_owner.name if deck_owner.nick is None else deck_owner.nick,
-                                              description='\n'.join([perso for perso in persos_text[(current_page - 1) * nb_per_page:current_page * nb_per_page]]))
+                                              description='\n'.join([perso for perso in persos_text[(
+                                                                                                                current_page - 1) * nb_per_page:current_page * nb_per_page]]))
                         if deck_owner.avatar:
                             embed.set_thumbnail(url=deck_owner.avatar.url)
                         embed.set_footer(text=f'{current_page} \\ {max_page}')
@@ -125,7 +131,11 @@ class Profile(commands.Cog):
     @slash_command(description='Set the profile displayed personality.\n'
                                'You can leave name blank to remove the current personality.',
                    guild_ids=utils.get_authorized_guild_ids())
-    async def set_perso_profile(self, ctx, name: str = None, group: str = None):
+    async def set_perso_profile(self, ctx, name: Option(str, 'Pick a name or write yours',
+                                                        autocomplete=utils.deck_name_searcher),
+                                group: Option(str, 'Pick a group or write yours',
+                                              autocomplete=utils.personalities_group_searcher, required=False,
+                                              default=None)):
         if name is None:
             DatabaseDeck.get().set_id_perso_profile(ctx.guild.id, ctx.author.id, None)
             await ctx.respond('I removed your profile\'s personality.')
