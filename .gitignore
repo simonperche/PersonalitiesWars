@@ -153,3 +153,4 @@ fabric.properties
 #DB files
 *.json
 *.db
+src/test.py
