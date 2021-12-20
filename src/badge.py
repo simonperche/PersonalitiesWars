@@ -116,6 +116,35 @@ class Badge(commands.Cog):
         msg = await ctx.interaction.original_message()
         await msg.add_reaction(u"\u2705")
 
+    @slash_command(description='Add personalities to a badge',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def add_many_perso_to_badge(self, ctx,
+                                 badge_name: Option(str, 'Pick a badge name', autocomplete=utils.badges_name_searcher),
+                                 personalities: Option(str, 'Personalities separated with "|". Ex: Steve Carell|Jenna Fischer')):
+
+        id_badge = DatabaseDeck.get().get_id_badge(ctx.interaction.guild.id, badge_name)
+        if not id_badge:
+            await ctx.respond(f'Badge {badge_name} not found.')
+            return
+
+        personalities = [perso.strip() for perso in personalities.split('|')]
+        perso_not_found = []
+        perso_added = []
+
+        for personality in personalities:
+            id_perso = DatabasePersonality.get().get_perso_id(personality)
+
+            if not id_perso:
+                perso_not_found.append(personality)
+            else:
+                DatabaseDeck.get().add_perso_to_badge(id_badge, id_perso)
+                perso_added.append(personality)
+
+        message = f'Added {", ".join(perso_added)}.' if perso_added else ''
+        message += f'\nCouln\'t find {", ".join(perso_not_found)}.' if perso_not_found else ''
+        await ctx.respond(message)
+
     @slash_command(description='Add a personality to a badge',
                    guild_ids=utils.get_authorized_guild_ids())
     @permissions.has_role("PersonalitiesWarsAdmin")
