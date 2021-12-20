@@ -19,7 +19,7 @@ class Badge(commands.Cog):
     @slash_command(description='Add a badge.',
                    guild_ids=utils.get_authorized_guild_ids())
     @permissions.has_role("PersonalitiesWarsAdmin")
-    async def add_badge(self, ctx, name: str, description: str = ''):
+    async def create_badge(self, ctx, name: str, description: str = ''):
         added = DatabaseDeck.get().add_badge(ctx.interaction.guild.id, name, description)
         if not added:
             await ctx.respond('Error : the badge probably already exists.')
@@ -29,6 +29,22 @@ class Badge(commands.Cog):
             await ctx.respond(f'New badge {name} added!')
             msg = await ctx.interaction.original_message()
             await msg.add_reaction(u"\u2705")
+
+    @slash_command(description='Update a badge name',
+                   guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
+    async def change_badge_name(self, ctx,
+                                old_name: Option(str, 'Pick a badge name', autocomplete=utils.badges_name_searcher),
+                                new_name: str):
+        id_badge = DatabaseDeck.get().get_id_badge(ctx.interaction.guild.id, old_name)
+        if not id_badge:
+            await ctx.respond(f'Badge {old_name} not found.')
+            return
+
+        DatabaseDeck.get().set_badge_name(id_badge, new_name)
+        await ctx.respond(f'Change badge {old_name} to "{new_name}".')
+        msg = await ctx.interaction.original_message()
+        await msg.add_reaction(u"\u2705")
 
     @slash_command(description='Set the description of a badge',
                    guild_ids=utils.get_authorized_guild_ids())

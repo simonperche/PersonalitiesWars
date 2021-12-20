@@ -639,6 +639,12 @@ class DatabaseDeck:
         self.db.commit()
         c.close()
 
+    def set_badge_name(self, id_badge, new_name):
+        c = self.db.cursor()
+        c.execute(''' UPDATE Badge SET name = ? WHERE id = ? ''', (new_name, id_badge,))
+        self.db.commit()
+        c.close()
+
     def get_all_badges(self, id_server):
         c = self.db.cursor()
         c.execute('''SELECT id, name, description
