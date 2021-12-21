@@ -61,15 +61,6 @@ class DatabasePersonality:
 
         return results[0] if results else None
 
-    def get_perso_images_count(self, id_perso):
-        """Get images count of an personality."""
-        c = self.db.cursor()
-        c.execute('''SELECT COUNT(url) FROM Image
-                    WHERE id_perso = ?''', (id_perso,))
-        images_count = c.fetchone()[0]
-        c.close()
-        return images_count
-
     def get_perso_group_id(self, name, group):
         """Return the personality with name and group or None otherwise."""
         c = self.db.cursor()
@@ -163,6 +154,15 @@ class DatabasePersonality:
 
         return [{'id': perso[0], 'name': perso[1],
                  'group': perso[2]} for perso in personalities]
+
+    def get_perso_all_images(self, id_perso):
+        c = self.db.cursor()
+        c.execute('''SELECT url
+                     FROM Image
+                     WHERE id_perso = ?''', (id_perso,))
+        urls = c.fetchall()
+        c.close()
+        return [url[0] for url in urls]
 
     def add_image(self, id_perso, url):
         c = self.db.cursor()
@@ -572,34 +572,6 @@ class DatabaseDeck:
                      WHERE id_server = ? AND id_perso = ?''', (current_image, id_server, id_perso))
         self.db.commit()
         c.close()
-
-    def decrement_perso_current_image(self, id_server, id_perso):
-        """Try to decrement the current image number."""
-        self.create_active_image_if_not_exist(id_server, id_perso)
-        current_image = self.get_perso_current_image(id_server, id_perso)
-        if current_image > 0:
-            current_image = current_image - 1
-        else:
-            image_count = DatabasePersonality.get().get_perso_images_count(id_perso)
-            current_image = (image_count - 1)
-
-        self.update_perso_current_image(id_server, id_perso, current_image)
-        return current_image
-
-    def increment_perso_current_image(self, id_server, id_perso):
-        """Try to increment the current image number."""
-        self.create_active_image_if_not_exist(id_server, id_perso)
-        current_image = self.get_perso_current_image(id_server, id_perso)
-        image_count = DatabasePersonality.get().get_perso_images_count(id_perso)
-
-        if current_image < (image_count - 1):
-            current_image = current_image + 1
-        else:
-            current_image = 0
-
-        self.update_perso_current_image(id_server, id_perso, current_image)
-
-        return current_image
 
     def get_perso_current_image(self, id_server, id_perso):
         """Get the current image associated to the personality."""

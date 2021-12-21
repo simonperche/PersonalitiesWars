@@ -49,85 +49,58 @@ class Information(commands.Cog):
 
         current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
         perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
-
-        embed = discord.Embed(title=perso['name'], description=perso['group'], colour=secrets.randbelow(0xffffff))
+        images = DatabasePersonality.get().get_perso_all_images(id_perso)
 
         id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
-
-        # Counter variables
-        total_images = DatabasePersonality.get().get_perso_images_count(id_perso)
-        current_image = parse_int(DatabaseDeck().get().get_perso_current_image(ctx.guild.id, id_perso)) + 1
-
-        # Footer have always the picture counter, and eventually the owner info
-        text = f'{current_image} \\ {total_images} \n'
+        owner = None
         if id_owner:
             owner = ctx.guild.get_member(id_owner)
+
+        badges_with_perso = DatabaseDeck.get().get_badges_with(ctx.guild.id, id_perso)
+
+        images_pages = []
+
+        for i in range(0, len(images)):
+            embed = discord.Embed(title=perso['name'], description=perso['group'], colour=secrets.randbelow(0xffffff))
+            if badges_with_perso:
+                embed.add_field(name=f'Badge{"s" if len(badges_with_perso) > 1 else ""}',
+                                value='\n'.join([badge['name'] for badge in badges_with_perso]))
             if owner:
-                text = f'{text}Belongs to {owner.name if not owner.nick else owner.nick}'
+                text = f'Belongs to {owner.name if not owner.nick else owner.nick}'
                 if owner.avatar:
                     embed.set_footer(icon_url=owner.avatar.url, text=text)
                 else:
                     embed.set_footer(text=text)
-        else:
-            embed.set_footer(text=text)
 
-        embed.set_image(url=perso['image'])
+            embed.set_image(url=images[i])
 
-        badges_with_perso = DatabaseDeck.get().get_badges_with(ctx.guild.id, id_perso)
-        if badges_with_perso:
-            embed.add_field(name=f'Badge{"s" if len(badges_with_perso) > 1 else ""}',
-                            value='\n'.join([badge['name'] for badge in badges_with_perso]))
+            images_pages.append(embed)
 
-        await ctx.respond(embed=embed)
-        msg = await ctx.interaction.original_message()
+        class SetDefaultButton(discord.ui.View):
+            def __init__(self, timeout: int = 180):
+                super().__init__(timeout=timeout)
+                self.paginator = None
 
-        left_emoji = '\U00002B05'
-        right_emoji = '\U000027A1'
-        await msg.add_reaction(left_emoji)
-        await msg.add_reaction(right_emoji)
+            def set_paginator(self, paginator: utils.PaginatorCustomStartPage):
+                self.paginator = paginator
 
-        def check(reaction, user):
-            return user != self.bot.user and (str(reaction.emoji) == left_emoji or str(reaction.emoji) == right_emoji) \
-                   and reaction.message.id == msg.id
+            @discord.ui.button(label="Choose as default image", style=discord.ButtonStyle.green, row=1)
+            async def button_default_image(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if not self.paginator:
+                    await ctx.send(f'Error while setting the image, contact the administrator.', delete_after=5)
+                else:
+                    DatabaseDeck.get().update_perso_current_image(ctx.guild.id, id_perso, self.paginator.current_page)
+                    await ctx.send(f'Set image {self.paginator.current_page+1} as default image.', delete_after=5)
 
-        timeout = False
+            async def on_timeout(self):
+                for child in self.children:
+                    child.disabled = True
+                self.stop()
 
-        while not timeout:
-            try:
-                reaction, user = await self.bot.wait_for('reaction_add', timeout=10, check=check)
-            except asyncio.TimeoutError:
-                await msg.clear_reaction(left_emoji)
-                await msg.clear_reaction(right_emoji)
-                timeout = True
-            else:
-                old_image = current_image
-                if reaction.emoji == left_emoji:
-                    DatabaseDeck.get().decrement_perso_current_image(ctx.guild.id, id_perso)
-
-                if reaction.emoji == right_emoji:
-                    DatabaseDeck.get().increment_perso_current_image(ctx.guild.id, id_perso)
-
-                current_image = parse_int(DatabaseDeck().get().get_perso_current_image(ctx.guild.id, id_perso)) + 1
-                await msg.remove_reaction(reaction.emoji, user)
-
-                # Refresh embed message with the new picture if changed
-                if old_image != current_image:
-                    # Redo the query because image link changed
-                    image_number = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
-                    perso = DatabasePersonality.get().get_perso_information(id_perso, image_number)
-                    embed.set_image(url=perso['image'])
-                    
-                    text = f'{current_image} \\ {total_images} \n'
-                    if id_owner and owner:
-                        text = f'{text}Belongs to {owner.name if not owner.nick else owner.nick}'
-                        if owner.avatar:
-                            embed.set_footer(icon_url=owner.avatar.url, text=text)
-                        else:
-                            embed.set_footer(text=text)
-                    else:
-                        embed.set_footer(text=text)
-
-                    await msg.edit(embed=embed)
+        button = SetDefaultButton()
+        paginator = utils.PaginatorCustomStartPage(pages=images_pages, first_page=current_image, custom_view=button)
+        button.set_paginator(paginator)
+        await paginator.respond(ctx)
 
     @slash_command(description='List all personalities with its name',
                    guild_ids=utils.get_authorized_guild_ids())

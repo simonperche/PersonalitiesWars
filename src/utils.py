@@ -1,4 +1,7 @@
+from typing import Dict, List, Optional, Union
+
 import discord
+from discord.ext import pages
 
 from database import DatabasePersonality, DatabaseDeck
 
@@ -75,3 +78,59 @@ class ConfirmView(discord.ui.View):
     async def disable(self):
         for child in self.children:
             child.disabled = True
+
+
+class PaginatorCustomStartPage(pages.Paginator):
+    def __init__(
+        self,
+        pages: Union[List[str], List[discord.Embed]],
+        author_check=True,
+        custom_view: Optional[discord.ui.View] = None,
+        timeout: Optional[float] = 180.0,
+        first_page: int = 0
+    ) -> None:
+        super().__init__(pages=pages, show_disabled=False, show_indicator=True, author_check=author_check,
+                         disable_on_timeout=True, custom_view=custom_view, timeout=timeout)
+
+        if first_page >= len(pages):
+            first_page = len(pages) - 1
+        elif first_page < 0:
+            first_page = 0
+
+        self.current_page = first_page
+        self.update_buttons()
+
+    async def respond(self, interaction: discord.Interaction, ephemeral: bool = False):
+        """Sends an interaction response or followup with the paginated items.
+
+
+        Parameters
+        ------------
+        interaction: :class:`discord.Interaction`
+            The interaction associated with this response.
+        ephemeral: :class:`bool`
+            Choose whether the message is ephemeral or not.
+
+        Returns
+        --------
+        :class:`~discord.Interaction`
+            The message sent with the paginator.
+        """
+        page = self.pages[self.current_page]
+        self.user = interaction.user
+
+        if interaction.response.is_done():
+            msg = await interaction.followup.send(
+                content=page if isinstance(page, str) else None, embed=page if isinstance(page, discord.Embed) else None, view=self, ephemeral=ephemeral
+            )
+
+        else:
+            msg = await interaction.response.send_message(
+                content=page if isinstance(page, str) else None, embed=page if isinstance(page, discord.Embed) else None, view=self, ephemeral=ephemeral
+            )
+        if isinstance(msg, (discord.WebhookMessage, discord.Message)):
+            self.message = msg
+        elif isinstance(msg, discord.Interaction):
+            self.message = await msg.original_message()
+        return self.message
+
