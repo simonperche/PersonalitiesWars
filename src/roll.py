@@ -78,58 +78,75 @@ class Roll(commands.Cog):
         if wish_msg:
             msg_embed += f'Wished by {wish_msg}'
 
-        msg = await ctx.send(msg_embed, embed=embed)
+        class ClaimButton(discord.ui.View):
+            def __init__(self, timeout: int):
+                super().__init__(timeout=timeout)
+                self.is_claimed = False
+                self.user_claim = None
+
+            @discord.ui.button(label="Claim", emoji='💕', style=discord.ButtonStyle.green)
+            async def claim(self, button: discord.ui.Button, interaction: discord.Interaction):
+                self.user_claim = interaction.user
+                self.is_claimed = True
+                self.disable()
+
+            async def interaction_check(self, interaction: discord.Interaction) -> bool:
+                time_until_claim = min_until_next_claim(interaction.guild.id, interaction.user.id)
+                if time_until_claim != 0:
+                    time = divmod(time_until_claim, 60)
+                    cant_claiming_username = interaction.user.name if interaction.user.nick is None else interaction.user.nick
+                    await interaction.response.send_message(f'{cant_claiming_username}, you can\'t claim right now. '
+                                                            f'Please wait **{str(time[0]) + "h " if time[0] != 0 else ""}{str(time[1])} min**.')
+                    return False
+
+                return True
+
+            def disable(self):
+                for child in self.children:
+                    child.disabled = True
+                self.stop()
+
+        claim_timeout = DatabaseDeck.get().get_server_configuration(ctx.guild.id)["time_to_claim"]
+        claim_button_view = ClaimButton(timeout=claim_timeout)
 
         # Cannot claim if perso already claim
         if id_owner:
+            await ctx.send(msg_embed, embed=embed)
             return
 
-        emoji = '\N{TWO HEARTS}'
-        await msg.add_reaction(emoji)
+        msg = await ctx.send(msg_embed, embed=embed, view=claim_button_view)
+        await claim_button_view.wait()
 
-        def check(reaction, user):
-            return user != self.bot.user and str(reaction.emoji) == emoji and reaction.message.id == msg.id
+        # Timeout
+        if not claim_button_view.is_claimed:
+            claim_button_view.disable()
+            await msg.edit(view=claim_button_view)
+        else:
+            user = claim_button_view.user_claim
+            username = user.name if user.nick is None else user.nick
 
-        is_claimed_or_timeout = False
-        claim_timeout = DatabaseDeck.get().get_server_configuration(ctx.guild.id)["time_to_claim"]
+            DatabaseDeck.get().add_to_deck(ctx.guild.id, perso['id'], user.id)
+            await ctx.send(f'{username} claims {perso["name"]}!')
 
-        while not is_claimed_or_timeout:
-            try:
-                _, user = await self.bot.wait_for('reaction_add', timeout=claim_timeout, check=check)
-                username = user.name if user.nick is None else user.nick
-            except asyncio.TimeoutError:
-                await msg.clear_reaction(emoji)
-                is_claimed_or_timeout = True
+            if user.avatar:
+                embed.set_footer(icon_url=user.avatar.url, text=f'Belongs to {username}')
             else:
-                time_until_claim = min_until_next_claim(ctx.guild.id, user.id)
-                is_claimed_or_timeout = time_until_claim == 0
+                embed.set_footer(text=f'Belongs to {username}')
+            await msg.edit(embed=embed, view=claim_button_view)
 
-                if is_claimed_or_timeout:
-                    DatabaseDeck.get().add_to_deck(ctx.guild.id, perso['id'], user.id)
-                    await ctx.send(f'{username} claims {perso["name"]}!')
-
-                    if user.avatar:
-                        embed.set_footer(icon_url=user.avatar.url, text=f'Belongs to {username}')
-                    else:
-                        embed.set_footer(text=f'Belongs to {username}')
-                    await msg.edit(embed=embed)
-
-                    if badges_with_perso:
-                        ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, user.id)
-                        msg_badges_progression = ''
-                        for badge in badges_with_perso:
-                            perso_in_badge = DatabaseDeck.get().get_perso_in_badge(badge['id'])
-                            count = sum([id_perso in ids_deck for id_perso in perso_in_badge])
-                            nb_perso = len(perso_in_badge)
-                            if perso['id'] in perso_in_badge and count == nb_perso:
-                                await ctx.send(f'**{user.mention}, you have just unlocked {badge["name"]} badge!**')
-                            msg_badges_progression += f'{badge["name"]} {count}/{nb_perso}\n'
-                        badge_embed = discord.Embed(title=f'Badges progression with {perso["name"]}', description=msg_badges_progression)
-                        await ctx.send(embed=badge_embed)
-                else:
-                    time = divmod(time_until_claim, 60)
-                    await ctx.send(f'{username}, you can\'t claim right now. ' +
-                                   f'Please wait **{str(time[0]) + "h " if time[0] != 0 else ""}{str(time[1])} min**.')
+            if badges_with_perso:
+                ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, user.id)
+                msg_badges_progression = ''
+                for badge in badges_with_perso:
+                    perso_in_badge = DatabaseDeck.get().get_perso_in_badge(badge['id'])
+                    count = sum([id_perso in ids_deck for id_perso in perso_in_badge])
+                    nb_perso = len(perso_in_badge)
+                    if perso['id'] in perso_in_badge and count == nb_perso:
+                        await ctx.send(f'**{user.mention}, you have just unlocked {badge["name"]} badge!**')
+                    msg_badges_progression += f'{badge["name"]} {count}/{nb_perso}\n'
+                badge_embed = discord.Embed(title=f'Badges progression with {perso["name"]}',
+                                            description=msg_badges_progression)
+                await ctx.send(embed=badge_embed)
 
 
 #### Utilities functions ####
