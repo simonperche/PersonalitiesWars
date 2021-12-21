@@ -235,7 +235,7 @@ class Badge(commands.Cog):
 
             persos_pages.append(embed)
 
-        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=True, show_indicator=True)
         await paginator.send(ctx)
 
     @slash_command(description='Show all personalities in this badge',
@@ -265,7 +265,7 @@ class Badge(commands.Cog):
                                   description='\n'.join([badge for badge in badges_text[i:i+nb_per_page]]))
             badges_pages.append(embed)
 
-        paginator = pages.Paginator(pages=badges_pages, show_disabled=False, show_indicator=True)
+        paginator = pages.Paginator(pages=badges_pages, show_disabled=True, show_indicator=True)
         await paginator.send(ctx)
 
     @slash_command(description='Show all badges',
@@ -287,7 +287,7 @@ class Badge(commands.Cog):
                                   description='\n'.join([badge for badge in badges_text[i:i+nb_per_page]]))
             badges_pages.append(embed)
 
-        paginator = pages.Paginator(pages=badges_pages, show_disabled=False, show_indicator=True)
+        paginator = pages.Paginator(pages=badges_pages, show_disabled=True, show_indicator=True)
         await paginator.send(ctx)
 
     def badge_belongs_to(self, id_server, ids_persos_badge):

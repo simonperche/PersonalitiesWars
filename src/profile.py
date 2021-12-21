@@ -94,7 +94,7 @@ class Profile(commands.Cog):
                 embed.set_thumbnail(url=deck_owner.avatar.url)
             persos_pages.append(embed)
 
-        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=True, show_indicator=True)
         await paginator.send(ctx)
 
     @slash_command(description='Set the profile displayed personality.\n'

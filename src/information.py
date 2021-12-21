@@ -132,7 +132,7 @@ class Information(commands.Cog):
                                   description='\n'.join([perso for perso in persos_text[i:i + nb_per_page]]))
             persos_pages.append(embed)
 
-        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=True, show_indicator=True)
         await paginator.send(ctx)
 
     @slash_command(description='Show all members of a group',
@@ -152,7 +152,7 @@ class Information(commands.Cog):
                                   description='\n'.join([f'**{member}**' for member in group['members'][i:i+nb_per_page]]))
             persos_pages.append(embed)
 
-        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=True, show_indicator=True)
         await paginator.send(ctx)
 
     @slash_command(description='Show all groups available',
@@ -172,7 +172,7 @@ class Information(commands.Cog):
                                   description='\n'.join([f'**{group}**' for group in groups[i:i+nb_per_page]]))
             persos_pages.append(embed)
 
-        paginator = pages.Paginator(pages=persos_pages, show_disabled=False, show_indicator=True)
+        paginator = pages.Paginator(pages=persos_pages, show_disabled=True, show_indicator=True)
         await paginator.send(ctx)
 
     @slash_command(description='Show last claims of the last 24h of the current channel.',

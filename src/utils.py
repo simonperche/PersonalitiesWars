@@ -89,7 +89,7 @@ class PaginatorCustomStartPage(pages.Paginator):
         timeout: Optional[float] = 180.0,
         first_page: int = 0
     ) -> None:
-        super().__init__(pages=pages, show_disabled=False, show_indicator=True, author_check=author_check,
+        super().__init__(pages=pages, show_disabled=True, show_indicator=True, author_check=author_check,
                          disable_on_timeout=True, custom_view=custom_view, timeout=timeout)
 
         if first_page >= len(pages):
