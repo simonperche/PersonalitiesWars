@@ -120,23 +120,21 @@ class DatabasePersonality:
         # second [0] for the column in result (here only 1 -> Personality.id)
         return random_perso[0][0]
 
-    def get_perso_information(self, id_perso, current_image):
+    def get_perso_information(self, id_perso):
         """Return personality information with dict {name, group, image} format."""
         c = self.db.cursor()
-        c.execute('''SELECT P.id, P.name, G.name, Image.url
+        c.execute('''SELECT P.id, P.name, G.name
                      FROM Personality AS P
                      JOIN PersoGroups AS PG ON PG.id_perso = P.id
                      JOIN Groups AS G ON PG.id_groups = G.id
-                     JOIN Image ON Image.id_perso = P.id
                      WHERE P.id = ?''', (id_perso,))
-        perso = c.fetchall()
+        perso = c.fetchone()
         c.close()
 
         if not perso:
             return None
 
-        return {'id': perso[current_image][0], 'name': perso[current_image][1],
-                'group': perso[current_image][2], 'image': perso[current_image][3]}
+        return {'id': perso[0], 'name': perso[1], 'group': perso[2]}
 
     def get_multiple_perso_information(self, ids_perso):
         """Return personalities information with dict {name, group} format."""
@@ -162,7 +160,8 @@ class DatabasePersonality:
                      WHERE id_perso = ?''', (id_perso,))
         urls = c.fetchall()
         c.close()
-        return [url[0] for url in urls]
+        urls = [url[0] for url in urls]
+        return sorted(urls)
 
     def add_image(self, id_perso, url):
         c = self.db.cursor()
@@ -574,16 +573,22 @@ class DatabaseDeck:
         c.close()
 
     def get_perso_current_image(self, id_server, id_perso):
-        """Get the current image associated to the personality."""
+        """Get the current url image associated to the personality (or the last one if bigger) or None if no images."""
         self.create_active_image_if_not_exist(id_server, id_perso)
         c = self.db.cursor()
         c.execute('''SELECT current_image
                      FROM Deck
                      WHERE id_server = ? AND id_perso = ?''', (id_server, id_perso))
-        current_image = c.fetchone()
+        current_image = c.fetchone()[0]
         c.close()
 
-        return current_image[0]
+        images = DatabasePersonality.get().get_perso_all_images(id_perso)
+        if not images:
+            return None
+
+        current_image = min(len(images), current_image)
+
+        return images[current_image]
 
     def add_badge(self, id_server, name, description=''):
         """Add a new badge to the server and return if the operation was successful"""

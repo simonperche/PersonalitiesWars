@@ -29,12 +29,12 @@ class Profile(commands.Cog):
 
         if id_perso_profile:
             current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso_profile)
-            perso = DatabasePersonality.get().get_perso_information(id_perso_profile, current_image)
+            perso = DatabasePersonality.get().get_perso_information(id_perso_profile)
 
             # Show profile's perso only if user owns the personality (might not be the case with trade, give, discard)
             owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, perso['id'])
-            if owner and owner == profile_owner.id:
-                image = perso['image']
+            if owner and owner == profile_owner.id and current_image:
+                image = current_image
 
         ids_deck = DatabaseDeck.get().get_user_deck(ctx.guild.id, profile_owner.id)
 

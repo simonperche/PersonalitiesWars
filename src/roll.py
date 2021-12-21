@@ -29,8 +29,7 @@ class Roll(commands.Cog):
 
         while not perso:
             id_perso = DatabasePersonality.get().get_random_perso_id()
-            current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
-            perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
+            perso = DatabasePersonality.get().get_perso_information(id_perso)
 
         # Update roll information in database
         DatabaseDeck.get().update_last_roll(ctx.guild.id, ctx.author.id)
@@ -47,8 +46,12 @@ class Roll(commands.Cog):
             msg_embed += f'**Required for {",".join([badge["name"] for badge in badges_with_perso])}' \
                          f' badge{"" if len(badges_with_perso) == 1 else "s"}!**\n'
 
+        current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
+
         embed = discord.Embed(title=perso['name'], description=perso['group'], colour=secrets.randbelow(0xffffff))
-        embed.set_image(url=perso['image'])
+
+        if current_image:
+            embed.set_image(url=current_image)
 
         id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
         if id_owner:

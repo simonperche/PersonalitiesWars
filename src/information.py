@@ -48,7 +48,7 @@ class Information(commands.Cog):
             return
 
         current_image = DatabaseDeck.get().get_perso_current_image(ctx.guild.id, id_perso)
-        perso = DatabasePersonality.get().get_perso_information(id_perso, current_image)
+        perso = DatabasePersonality.get().get_perso_information(id_perso)
         images = DatabasePersonality.get().get_perso_all_images(id_perso)
 
         id_owner = DatabaseDeck.get().perso_belongs_to(ctx.guild.id, id_perso)
@@ -98,7 +98,12 @@ class Information(commands.Cog):
                 self.stop()
 
         button = SetDefaultButton()
-        paginator = utils.PaginatorCustomStartPage(pages=images_pages, first_page=current_image, custom_view=button)
+        try:
+            current_image_index = images.index(current_image)
+        except ValueError:
+            current_image_index = 0
+        paginator = utils.PaginatorCustomStartPage(pages=images_pages, first_page=current_image_index,
+                                                   custom_view=button)
         button.set_paginator(paginator)
         await paginator.respond(ctx)
 
