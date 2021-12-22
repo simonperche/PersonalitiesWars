@@ -1,6 +1,6 @@
 import secrets
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
@@ -93,10 +93,9 @@ class Roll(commands.Cog):
             async def interaction_check(self, interaction: discord.Interaction) -> bool:
                 time_until_claim = min_until_next_claim(interaction.guild.id, interaction.user.id)
                 if time_until_claim != 0:
-                    time = divmod(time_until_claim, 60)
                     cant_claiming_username = interaction.user.name if interaction.user.nick is None else interaction.user.nick
                     await interaction.response.send_message(f'{cant_claiming_username}, you can\'t claim right now. '
-                                                            f'Please wait **{str(time[0]) + "h " if time[0] != 0 else ""}{str(time[1])} min**.')
+                                                            f'Ready **<t:{int((datetime.now() + timedelta(minutes=time_until_claim)).timestamp())}:R>**.')
                     return False
 
                 return True

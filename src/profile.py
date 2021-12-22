@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import asyncio
 import math
 from collections import defaultdict
@@ -144,8 +144,8 @@ class Profile(commands.Cog):
             msg += 'can claim right now!'
         else:
             time = divmod(next_claim, 60)
-            msg += 'can\'t claim for another **' + \
-                   (str(time[0]) + 'h ' if time[0] != 0 else '') + f'{str(time[1])} min**.'
+            msg += f'can\'t claim yet. ' \
+                   f'Ready **<t:{int((datetime.now() + timedelta(minutes=next_claim)).timestamp())}:R>**.'
 
         user_nb_rolls = DatabaseDeck.get().get_nb_rolls(ctx.guild.id, ctx.author.id)
         max_rolls = DatabaseDeck.get().get_rolls_per_hour(ctx.guild.id)
@@ -162,6 +162,6 @@ class Profile(commands.Cog):
                 user_nb_rolls = 0
 
         msg += f'\nYou have **{max_rolls - user_nb_rolls}** rolls left.\n' \
-               f'Next rolls reset in **{60 - datetime.now().minute} min**.'
+               f'Next rolls reset **<t:{int((datetime.now().replace(minute=0) + timedelta(hours=1)).timestamp())}:R>**.'
 
         await ctx.respond(msg)
