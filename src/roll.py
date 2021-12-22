@@ -19,7 +19,8 @@ class Roll(commands.Cog):
     async def roll(self, ctx):
         minutes = min_until_next_roll(ctx.guild.id, ctx.author.id)
         if minutes != 0:
-            await ctx.send(f'You cannot roll right now. The next roll reset is in {minutes} minutes.')
+            await ctx.send(f'You cannot roll right now. '
+                           f'Next rolls reset **<t:{int((datetime.now().replace(minute=0) + timedelta(hours=1)).timestamp())}:R>**.')
             return
 
         perso = None
