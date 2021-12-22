@@ -1,4 +1,6 @@
 from typing import Dict, List, Optional, Union
+import contextlib
+import asyncio
 
 import discord
 from discord.ext import pages
@@ -134,3 +136,10 @@ class PaginatorCustomStartPage(pages.Paginator):
             self.message = await msg.original_message()
         return self.message
 
+
+# https://stackoverflow.com/questions/49622924/wait-for-timeout-or-event-being-set-for-asyncio-event
+async def event_wait(event: asyncio.Event, timeout: float):
+    # suppress TimeoutError because we'll return False in case of timeout
+    with contextlib.suppress(asyncio.TimeoutError):
+        await asyncio.wait_for(event.wait(), timeout)
+    return event.is_set()

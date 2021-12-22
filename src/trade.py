@@ -14,6 +14,9 @@ class Trade(commands.Cog):
     def __init__(self, bot):
         """Initial the cog with the bot."""
         self.bot = bot
+        # Events for blocking the trade while the second member chose a personality
+        # Contains id_member: {event: blocking_event, id_perso: id_perso}
+        self.events = {}
 
     #### Commands ####
     @slash_command(description='Trade one personality for another.',
@@ -22,36 +25,38 @@ class Trade(commands.Cog):
                     name: Option(str, 'Pick a personality', autocomplete=utils.deck_name_searcher),
                     group: Option(str, 'Pick a group or write yours',
                                   autocomplete=utils.personalities_group_searcher, required=False, default=None)):
+        if user.id in self.events.keys():
+            await ctx.respond(f'{user.name if not user.nick else user.nick} is currently in a trade. '
+                              f'Please wait and retry...')
+            return
+
         await ctx.respond('Let\'s trade!')
         id_perso_give = await self.can_give(ctx, ctx.author, name, group)
         if not id_perso_give:
             return
 
-        def check_name_group(message):
-            param = list(filter(None, map(str.strip, message.content.split('"'))))
-            return message.author == user and (not param or 1 <= len(param) <= 2)
-
         await ctx.send(f'{user.mention}, {ctx.author.mention} wants to trade with you.\n'
                        f'Who do you want to trade for **{name}** ?\n'
-                       f'\nType name ["group"] **("" required around group!)**')
-        try:
-            msg = await self.bot.wait_for('message', timeout=30, check=check_name_group)
-        except asyncio.TimeoutError:
+                       f'Use /{self.rtrade.name} command to answer.')
+
+        event = asyncio.Event()
+        self.events[user.id] = {'event': event, 'id_perso': None}
+
+        is_timeout = not await utils.event_wait(event=event, timeout=30)
+        id_perso_receive = self.events[user.id]['id_perso']
+
+        del self.events[user.id]
+
+        if is_timeout:
             await ctx.send('Too late... Give is cancelled.')
             msg = await ctx.interaction.original_message()
             await msg.add_reaction(u"\u274C")
             return
 
-        arg = list(filter(None, map(str.strip, msg.content.split('"'))))
-        name_receive = arg[0]
-        group_receive = [] if len(arg) == 1 else arg[1]
-
-        id_perso_receive = await self.can_give(ctx, user, name_receive, group_receive)
-        if not id_perso_receive:
-            return
+        perso_receive = DatabasePersonality.get().get_perso_information(id_perso_receive)
 
         accept_view = utils.ConfirmView(ctx.author)
-        msg = await ctx.send(f'{user.mention} trades **{name_receive}** for **{name}**.\n'
+        msg = await ctx.send(f'{user.mention} trades **{perso_receive["name"]}** for **{name}**.\n'
                              f'{ctx.author.mention}, do you accept?', view=accept_view)
         await accept_view.wait()
 
@@ -70,6 +75,30 @@ class Trade(commands.Cog):
             await msg.add_reaction(u"\u2705")
         else:
             await ctx.send('Trade is cancelled.')
+
+    @slash_command(description='Choose a personality for the current trade',
+                   guild_ids=utils.get_authorized_guild_ids())
+    async def rtrade(self, ctx, name: Option(str, 'Pick a personality', autocomplete=utils.deck_name_searcher),
+                     group: Option(str, 'Pick a group or write yours',
+                                   autocomplete=utils.personalities_group_searcher, required=False, default=None)):
+        interaction_user_id = ctx.interaction.user.id
+        current_trades_members = self.events.keys()
+        if interaction_user_id not in current_trades_members:
+            await ctx.respond('You have no trade in progress. '
+                              'Someone has to start a trade with you using /trade first.', ephemeral=True)
+            return
+
+        await ctx.defer()
+        id_perso = await self.can_give(ctx, ctx.author, name, group)
+        if not id_perso:
+            await ctx.respond(content=f'The trade is **not** canceled. '
+                                      f'Please indicate a new personality using /{self.rtrade.name}.')
+            return
+
+        self.events[interaction_user_id]['id_perso'] = id_perso
+        self.events[interaction_user_id]['event'].set()
+
+        await ctx.respond(f'{name}{" - " + group if group else ""}')
 
     @slash_command(description='Give one personality to someone.',
                    guild_ids=utils.get_authorized_guild_ids())
@@ -187,7 +216,7 @@ class Trade(commands.Cog):
             msg = f'I searched everywhere for **{name}**'
             if group:
                 msg += f' in the group *{group}*'
-            msg += ' and I couldn\'t find anything.\nPlease check the command.'
+            msg += ' and I couldn\'t find anything.'
             await ctx.send(msg)
             msg = await ctx.interaction.original_message()
             await msg.add_reaction(u"\u274C")
