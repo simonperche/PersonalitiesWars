@@ -25,7 +25,8 @@ class Trade(commands.Cog):
                     name: Option(str, 'Pick a personality', autocomplete=utils.deck_name_searcher),
                     group: Option(str, 'Pick a group or write yours',
                                   autocomplete=utils.personalities_group_searcher, required=False, default=None)):
-        if user.id in self.events.keys():
+        key = f'{ctx.guild.id}{user.id}'
+        if key in self.events.keys():
             await ctx.respond(f'{user.name if not user.nick else user.nick} is currently in a trade. '
                               f'Please wait and retry...')
             return
@@ -40,12 +41,12 @@ class Trade(commands.Cog):
                        f'Use /{self.rtrade.name} command to answer.')
 
         event = asyncio.Event()
-        self.events[user.id] = {'event': event, 'id_perso': None}
+        self.events[key] = {'event': event, 'id_perso': None}
 
         is_timeout = not await utils.event_wait(event=event, timeout=30)
-        id_perso_receive = self.events[user.id]['id_perso']
+        id_perso_receive = self.events[key]['id_perso']
 
-        del self.events[user.id]
+        del self.events[key]
 
         if is_timeout:
             await ctx.send('Too late... Give is cancelled.')
@@ -81,9 +82,9 @@ class Trade(commands.Cog):
     async def rtrade(self, ctx, name: Option(str, 'Pick a personality', autocomplete=utils.deck_name_searcher),
                      group: Option(str, 'Pick a group or write yours',
                                    autocomplete=utils.personalities_group_searcher, required=False, default=None)):
-        interaction_user_id = ctx.interaction.user.id
+        key = f'{ctx.guild.id}{ctx.interaction.user.id}'
         current_trades_members = self.events.keys()
-        if interaction_user_id not in current_trades_members:
+        if key not in current_trades_members:
             await ctx.respond('You have no trade in progress. '
                               'Someone has to start a trade with you using /trade first.', ephemeral=True)
             return
@@ -95,8 +96,8 @@ class Trade(commands.Cog):
                                       f'Please indicate a new personality using /{self.rtrade.name}.')
             return
 
-        self.events[interaction_user_id]['id_perso'] = id_perso
-        self.events[interaction_user_id]['event'].set()
+        self.events[key]['id_perso'] = id_perso
+        self.events[key]['event'].set()
 
         await ctx.respond(f'{name}{" - " + group if group else ""}')
 
