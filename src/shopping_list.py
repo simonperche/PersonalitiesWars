@@ -95,6 +95,7 @@ class ShoppingList(commands.Cog):
     @slash_command(description='Show your shopping list.',
                    guild_ids=utils.get_authorized_guild_ids())
     async def shopping_list(self, ctx, member: Option(discord.Member, required=False, default=None)):
+        await ctx.defer()
         shopping_list_owner = member or ctx.author
 
         ids = DatabaseDeck.get().get_shopping_list(ctx.guild.id, shopping_list_owner.id)
@@ -160,5 +161,6 @@ class ShoppingList(commands.Cog):
 
             shopping_list_pages.append(embed)
 
+        shopping_list_pages = ["No shopping list found..."] if not shopping_list_pages else shopping_list_pages
         paginator = pages.Paginator(pages=shopping_list_pages, show_disabled=True, show_indicator=True)
         await paginator.send(ctx)

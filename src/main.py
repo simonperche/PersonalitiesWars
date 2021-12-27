@@ -22,6 +22,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 bot = commands.Bot(command_prefix='*', intents=intents)
 
+# TODO: If pages in paginator are empty, crash because of None send in embed instead of MISSING from discord.utils
 bot.add_cog(Roll(bot))
 bot.add_cog(Admin(bot))
 bot.add_cog(Profile(bot))
