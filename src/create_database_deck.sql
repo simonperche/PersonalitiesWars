@@ -44,6 +44,15 @@ FOREIGN KEY (id_member) REFERENCES Member(id),
 PRIMARY KEY (id_server, id_perso, id_member)
 )
 
+CREATE TABLE ShoppingList (
+id_server INT,
+id_perso INT,
+id_member INT,
+FOREIGN KEY (id_server) REFERENCES Server(id),
+FOREIGN KEY (id_member) REFERENCES Member(id),
+PRIMARY KEY (id_server, id_perso, id_member)
+)
+
 CREATE TABLE Badge (
 id INTEGER PRIMARY KEY,
 name TEXT,

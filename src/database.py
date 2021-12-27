@@ -553,6 +553,58 @@ class DatabaseDeck:
 
         return members
 
+    def add_to_shopping_list(self, id_server, id_perso, id_member):
+        """Return true if success, false otherwise."""
+        c = self.db.cursor()
+        is_success = True
+
+        try:
+            c.execute('''INSERT
+                         INTO ShoppingList(id_server, id_perso, id_member) 
+                         VALUES (?,?,?)''', (id_server, id_perso, id_member))
+        except sqlite3.IntegrityError:
+            is_success = False
+        self.db.commit()
+        c.close()
+
+        return is_success
+
+    def remove_from_shopping_list(self, id_server, id_perso, id_member):
+        """Return true if success, false otherwise."""
+        c = self.db.cursor()
+
+        # If the personality is not in wish list
+        c.execute('''SELECT COUNT(*) FROM ShoppingList
+                     WHERE id_server = ?
+                     AND id_perso = ?
+                     AND id_member = ?''', (id_server, id_perso, id_member))
+        if c.fetchone()[0] == 0:
+            c.close()
+            return False
+
+        c.execute('''DELETE FROM ShoppingList
+                     WHERE id_server = ?
+                     AND id_perso = ?
+                     AND id_member = ?''', (id_server, id_perso, id_member))
+
+        self.db.commit()
+        c.close()
+
+        return True
+
+    def get_shopping_list(self, id_server, id_member):
+        """Return wish list of personalities as ids array, or [] otherwise."""
+        c = self.db.cursor()
+        c.execute('''SELECT id_perso
+                     FROM ShoppingList
+                     WHERE id_server = ? AND id_member = ?''', (id_server, id_member))
+        shopping_list = c.fetchall()
+        c.close()
+
+        shopping_list = [id_perso[0] for id_perso in shopping_list]
+
+        return shopping_list
+
     def give_to(self, id_server, id_perso, id_giver, id_receiver):
         """Give an personality to another player."""
         c = self.db.cursor()

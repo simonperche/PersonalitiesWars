@@ -29,6 +29,13 @@ async def wishlist_name_searcher(ctx: discord.AutocompleteContext):
             if ctx.value.lower() in perso['name'].lower()]
 
 
+async def shopping_list_name_searcher(ctx: discord.AutocompleteContext):
+    ids = DatabaseDeck.get().get_shopping_list(ctx.interaction.guild.id, ctx.interaction.user.id)
+    personalities = DatabasePersonality.get().get_multiple_perso_information(ids)
+    return [perso['name'] for perso in personalities
+            if ctx.value.lower() in perso['name'].lower()]
+
+
 async def deck_name_searcher(ctx: discord.AutocompleteContext):
     ids = DatabaseDeck.get().get_user_deck(ctx.interaction.guild.id, ctx.interaction.user.id)
     personalities = DatabasePersonality.get().get_multiple_perso_information(ids)

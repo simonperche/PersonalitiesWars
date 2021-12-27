@@ -117,5 +117,6 @@ class Wishlist(commands.Cog):
                         emoji = u"\u274C"
                 description += f'**{perso["name"]}** *{perso["group"]}* {emoji}\n'
 
+        # TODO: crash if description is over 2000 characters
         await ctx.respond(embed=discord.Embed(title=f'Wish list of {username} ({nb_wish}/{max_wish})',
                                               description=description))
