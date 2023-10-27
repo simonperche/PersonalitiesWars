@@ -13,6 +13,7 @@ from trade import Trade
 from images import Images
 from badge import Badge
 from shopping_list import ShoppingList
+from personalities_handler import PersonalitiesHandler
 import utils
 
 intents = discord.Intents.default()
@@ -32,6 +33,7 @@ bot.add_cog(Trade(bot))
 bot.add_cog(Images(bot))
 bot.add_cog(Badge(bot))
 bot.add_cog(ShoppingList(bot))
+bot.add_cog(PersonalitiesHandler(bot))
 
 
 #### Bot commands ####

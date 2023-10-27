@@ -4,6 +4,8 @@ Singleton classes representing databases.
 These classes provide functions to access to data in personalities and member database.
 """
 
+from __future__ import annotations
+
 import sqlite3
 from collections import defaultdict
 
@@ -12,7 +14,7 @@ class DatabasePersonality:
     __instance = None
 
     @staticmethod
-    def get():
+    def get() -> DatabasePersonality:
         if DatabasePersonality.__instance is None:
             DatabasePersonality()
         return DatabasePersonality.__instance
@@ -56,6 +58,14 @@ class DatabasePersonality:
     def get_perso_id(self, name):
         c = self.db.cursor()
         c.execute('''SELECT P.id FROM Personality AS P WHERE P.name = ? COLLATE NOCASE''', (name,))
+        results = c.fetchone()
+        c.close()
+
+        return results[0] if results else None
+
+    def get_group_id(self, name):
+        c = self.db.cursor()
+        c.execute('''SELECT G.id FROM Groups AS G WHERE G.name = ? COLLATE NOCASE''', (name,))
         results = c.fetchone()
         c.close()
 
@@ -163,6 +173,34 @@ class DatabasePersonality:
         urls = [url[0] for url in urls]
         return sorted(urls)
 
+    def add_personality(self, name, id_group, url):
+        c = self.db.cursor()
+        c.execute(''' INSERT OR IGNORE INTO Personality(name) VALUES (?) ''', (name,))
+        id_perso = self.get_perso_id(name)
+        c.execute(''' INSERT OR IGNORE INTO PersoGroups(id_groups, id_perso) VALUES (?, ?) ''',
+                  (id_group, id_perso,))
+        self.add_image(id_perso, url)
+        self.db.commit()
+        c.close()
+
+    def remove_personality(self, id_perso):
+        c = self.db.cursor()
+        c.execute(''' DELETE FROM Personality WHERE id = ? ''', (id_perso,))
+        c.execute(''' DELETE FROM PersoGroups WHERE id_perso = ? ''', (id_perso,))
+        c.execute(''' DELETE FROM Image WHERE id_perso = ? ''', (id_perso,))
+        self.db.commit()
+        c.close()
+
+        # TODO:  <<!! WARNING !!>> This does not handle multiple server <<!! WARNING !!>>
+        # Quick dirty hack to not create multiple functions in DatabaseDeck
+        c = DatabaseDeck.get().db.cursor()
+        c.execute(''' DELETE FROM Deck WHERE id_perso = ? ''', (id_perso,))
+        c.execute(''' DELETE FROM Wishlist WHERE id_perso = ? ''', (id_perso,))
+        c.execute(''' DELETE FROM ShoppingList WHERE id_perso = ? ''', (id_perso,))
+        c.execute(''' DELETE FROM BadgePerso WHERE id_perso = ? ''', (id_perso,))
+        DatabaseDeck.get().db.commit()
+        c.close()
+
     def add_image(self, id_perso, url):
         c = self.db.cursor()
         c.execute(''' INSERT OR IGNORE INTO Image(url, id_perso) VALUES (?, ?) ''', (url, id_perso,))
@@ -180,7 +218,7 @@ class DatabaseDeck:
     __instance = None
 
     @staticmethod
-    def get():
+    def get() -> DatabaseDeck:
         if DatabaseDeck.__instance is None:
             DatabaseDeck()
         return DatabaseDeck.__instance

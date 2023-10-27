@@ -51,7 +51,7 @@ id_member INT,
 FOREIGN KEY (id_server) REFERENCES Server(id),
 FOREIGN KEY (id_member) REFERENCES Member(id),
 PRIMARY KEY (id_server, id_perso, id_member)
-)
+);
 
 CREATE TABLE Badge (
 id INTEGER PRIMARY KEY,
