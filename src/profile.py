@@ -84,6 +84,9 @@ class Profile(commands.Cog):
 
         persos_text.sort()
 
+        if not persos_text:
+            persos_text = ['This deck is empty... Gotta catch \'em all!']
+
         nb_per_page = 20
         persos_pages = []
 
