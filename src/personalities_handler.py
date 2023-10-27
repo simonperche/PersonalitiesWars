@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord.commands import slash_command, Option
+from discord.commands import slash_command, Option, permissions
 
 from database import DatabasePersonality
 import utils
@@ -15,6 +15,7 @@ class PersonalitiesHandler(commands.Cog):
 
     @slash_command(description='Add a personality.',
                    guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
     async def add_personality(self, ctx, name: Option(str, "The name"),
                               group: Option(str, "Group of the personality",
                                             autocomplete=utils.personalities_group_searcher),
@@ -37,6 +38,7 @@ class PersonalitiesHandler(commands.Cog):
 
     @slash_command(description='Remove a personality (can\'t be undone!).',
                    guild_ids=utils.get_authorized_guild_ids())
+    @permissions.has_role("PersonalitiesWarsAdmin")
     async def remove_personality(self, ctx,
                            name: Option(str, "Pick a name",
                                         autocomplete=utils.personalities_name_searcher),
