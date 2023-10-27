@@ -18,7 +18,7 @@ class PersonalitiesHandler(commands.Cog):
     async def add_personality(self, ctx, name: Option(str, "The name"),
                               group: Option(str, "Group of the personality",
                                             autocomplete=utils.personalities_group_searcher),
-                              url: str):
+                              image_url: str):
         name = name.strip()
 
         id_group = DatabasePersonality.get().get_group_id(group)
@@ -29,7 +29,7 @@ class PersonalitiesHandler(commands.Cog):
             await msg.add_reaction(u"\u274C")
             return
 
-        DatabasePersonality.get().add_personality(name, id_group, url)
+        DatabasePersonality.get().add_personality(name, id_group, image_url)
         # Green mark
         await ctx.respond('Done.')
         msg = await ctx.interaction.original_message()
