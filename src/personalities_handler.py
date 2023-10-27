@@ -31,7 +31,7 @@ class PersonalitiesHandler(commands.Cog):
 
         DatabasePersonality.get().add_personality(name, id_group, image_url)
         # Green mark
-        await ctx.respond('Done.')
+        await ctx.respond(f'{name} in the group {group} has been added.')
         msg = await ctx.interaction.original_message()
         await msg.add_reaction(u"\u2705")
 
